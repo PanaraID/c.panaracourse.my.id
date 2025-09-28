@@ -30,7 +30,7 @@ class extends Component {
             <li>Event dan webinar khusus mentor</li>
         </ul>
     </div>
-    <a href="#daftar" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow transition duration-200">
+    <a href="{{ route('login') }}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow transition duration-200">
         Gabung Sebagai Mentor Sekarang
     </a>
 </div>
