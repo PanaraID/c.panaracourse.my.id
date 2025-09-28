@@ -6,7 +6,10 @@ use Livewire\Volt\Component;
 new
 #[Layout('layouts.base')]
 class extends Component {
-    
+    public function mount()
+    {
+        logger()->info('Home page visited');
+    }
 };
 
 ?>
