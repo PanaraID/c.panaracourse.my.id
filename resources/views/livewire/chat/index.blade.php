@@ -1,96 +1,108 @@
 <?php
 
-use function Livewire\Volt\{computed, state, on, mount};
+use Livewire\Volt\Component;
 use App\Models\Chat;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-state(['showCreateModal' => false]);
+new class extends Component {
+    public bool $showCreateModal = false;
+    public string $title = '';
+    public string $description = '';
 
-$chats = computed(function () {
-    $user = Auth::user();
-
-    if ($user->hasRole('admin')) {
-        // Admin can see all chats
-        return Chat::with(['creator', 'members'])
-            ->withCount(['messages', 'members'])
-            ->orderByDesc('created_at')
-            ->get();
-    } else {
-        // Member can only see chats they're part of
-        return $user
-            ->chats()
-            ->with(['creator', 'members'])
-            ->withCount(['messages', 'members'])
-            ->orderByDesc('created_at')
-            ->get();
+    public function with(): array
+    {
+        return [
+            'chats' => $this->getChats(),
+        ];
     }
-});
 
-$createChat = function () {
-    dd($this->title);
-    $this->validate([
-        'title' => 'required|string|max:255',
-        'description' => 'nullable|string|max:1000',
-    ]);
+    public function getChats()
+    {
+        $user = Auth::user();
 
-    $chat = Chat::create([
-        'title' => $this->title,
-        'description' => $this->description,
-        'created_by' => Auth::id(),
-    ]);
+        if ($user->hasRole('admin')) {
+            // Admin can see all chats
+            return Chat::with(['creator', 'members'])
+                ->withCount(['messages', 'members'])
+                ->orderByDesc('created_at')
+                ->get();
+        } else {
+            // Member can only see chats they're part of
+            return $user
+                ->chats()
+                ->with(['creator', 'members'])
+                ->withCount(['messages', 'members'])
+                ->orderByDesc('created_at')
+                ->get();
+        }
+    }
 
-    // Add creator as member
-    $chat->members()->attach(Auth::id());
+    public function createChat()
+    {
+        $this->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+        ]);
 
-    Log::info('Chat created', [
-        'chat_id' => $chat->id,
-        'title' => $chat->title,
-        'created_by' => Auth::user()->name,
-        'user_id' => Auth::id(),
-    ]);
+        $chat = Chat::create([
+            'title' => $this->title,
+            'description' => $this->description,
+            'created_by' => Auth::id(),
+        ]);
 
-    $this->reset(['title', 'description', 'showCreateModal']);
-    $this->dispatch('chat-created');
-};
+        // Add creator as member
+        $chat->members()->attach(Auth::id());
 
-$deleteChat = function ($chatId) {
-    $chat = Chat::findOrFail($chatId);
-
-    // Only admin or creator can delete chat
-    if (Auth::user()->hasRole('admin') || $chat->created_by === Auth::id()) {
-        Log::info('Chat deleted', [
+        Log::info('Chat created', [
             'chat_id' => $chat->id,
             'title' => $chat->title,
-            'deleted_by' => Auth::user()->name,
+            'created_by' => Auth::user()->name,
             'user_id' => Auth::id(),
         ]);
 
-        $chat->delete();
-        $this->dispatch('chat-deleted');
+        $this->reset(['title', 'description', 'showCreateModal']);
+        $this->dispatch('chat-created');
     }
-};
 
-$joinChat = function ($chatId) {
-    $chat = Chat::findOrFail($chatId);
-    $user = Auth::user();
+    public function deleteChat($chatId)
+    {
+        $chat = Chat::findOrFail($chatId);
 
-    if (!$chat->members->contains($user)) {
-        $chat->members()->attach($user->id);
+        // Only admin or creator can delete chat
+        if (Auth::user()->hasRole('admin') || $chat->created_by === Auth::id()) {
+            Log::info('Chat deleted', [
+                'chat_id' => $chat->id,
+                'title' => $chat->title,
+                'deleted_by' => Auth::user()->name,
+                'user_id' => Auth::id(),
+            ]);
 
-        Log::info('User joined chat', [
-            'chat_id' => $chat->id,
-            'chat_title' => $chat->title,
-            'user_name' => $user->name,
-            'user_id' => $user->id,
-        ]);
-
-        $this->dispatch('chat-joined');
+            $chat->delete();
+            $this->dispatch('chat-deleted');
+        }
     }
-};
 
-?>
+    public function joinChat($chatId)
+    {
+        $chat = Chat::findOrFail($chatId);
+        $user = Auth::user();
+
+        if (!$chat->members->contains($user)) {
+            $chat->members()->attach($user->id);
+
+            Log::info('User joined chat', [
+                'chat_id' => $chat->id,
+                'chat_title' => $chat->title,
+                'user_name' => $user->name,
+                'user_id' => $user->id,
+            ]);
+
+            $this->dispatch('chat-joined');
+        }
+    }
+}; ?>
 
 <div>
     <div class="space-y-6 p-6">
@@ -109,7 +121,7 @@ $joinChat = function ($chatId) {
 
         <!-- Chat List -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            @foreach ($this->chats as $chat)
+            @foreach ($chats as $chat)
                 <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                     <div class="p-6">
                         <div class="flex justify-between items-start mb-4">
@@ -166,18 +178,18 @@ $joinChat = function ($chatId) {
             @endforeach
         </div>
 
-
-    @if($this->chats->isEmpty())
-        <div class="text-center py-12">
-            <div class="w-24 h-24 mx-auto mb-4 text-gray-300">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>
+        @if($chats->isEmpty())
+            <div class="text-center py-12">
+                <div class="w-24 h-24 mx-auto mb-4 text-gray-300">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada chat</h3>
+                <p class="text-gray-500 mb-4">{{ Auth::user()->hasRole('admin') ? 'Buat chat pertama atau bergabung dengan chat yang ada.' : 'Bergabunglah dengan chat yang sudah ada.' }}</p>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada chat</h3>
-            <p class="text-gray-500 mb-4">{{ Auth::user()->hasRole('admin') ? 'Buat chat pertama atau bergabung dengan chat yang ada.' : 'Bergabunglah dengan chat yang sudah ada.' }}</p>
-        </div>
-    @endif
+        @endif
+
         <!-- Create Chat Modal -->
         @if ($showCreateModal)
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
