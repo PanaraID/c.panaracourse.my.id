@@ -45,6 +45,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         }
 
         Auth::login($user, $this->remember);
+        logger()->notice('User logged in', ['user_id' => $user->id, 'name' => $user->name, 'email' => $user->email]);
 
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
