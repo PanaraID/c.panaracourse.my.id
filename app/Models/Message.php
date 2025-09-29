@@ -15,6 +15,10 @@ class Message extends Model
         'edited_at'
     ];
 
+    protected $attributes = [
+        'is_edited' => false,
+    ];
+
     protected $casts = [
         'is_edited' => 'boolean',
         'edited_at' => 'datetime'
