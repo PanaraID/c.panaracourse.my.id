@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
@@ -25,6 +26,7 @@ new class extends Component {
     public function updateProfileInformation(): void
     {
         $user = Auth::user();
+        $originalData = $user->only(['name', 'email']);
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -46,6 +48,15 @@ new class extends Component {
         }
 
         $user->save();
+
+        // Log profile update
+        Log::info('Profile updated', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'original_data' => $originalData,
+            'updated_data' => $user->only(['name', 'email']),
+            'changed_fields' => array_keys($user->getChanges()),
+        ]);
 
         $this->dispatch('profile-updated', name: $user->name);
     }

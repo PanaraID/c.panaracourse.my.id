@@ -10,10 +10,28 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    @role('admin|member')
+                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('chat.index')" :current="request()->routeIs('chat.*')" wire:navigate>{{ __('Chat') }}</flux:navlist.item>
+                        <flux:navlist.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.*')" wire:navigate>
+                            {{ __('Notifikasi') }}
+                            @if(auth()->user()->unreadNotificationsCount() > 0)
+                                <span class="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                    {{ auth()->user()->unreadNotificationsCount() > 99 ? '99+' : auth()->user()->unreadNotificationsCount() }}
+                                </span>
+                            @endif
+                        </flux:navlist.item>
+                    @endrole
                 </flux:navlist.group>
             </flux:navlist>
 
             <flux:spacer />
+
+            <!-- Desktop Notifications -->
+            @role('admin|member')
+                <div class="hidden lg:block px-4 mb-4">
+                    <livewire:notifications.dropdown />
+                </div>
+            @endrole
 
             <!-- Desktop User Menu -->
             <flux:dropdown class="hidden lg:block" position="bottom" align="start">
@@ -67,6 +85,11 @@
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
+
+            <!-- Mobile Notifications -->
+            @role('admin|member')
+                <livewire:notifications.dropdown />
+            @endrole
 
             <flux:dropdown position="top" align="end">
                 <flux:profile

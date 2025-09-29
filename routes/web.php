@@ -31,6 +31,27 @@ Route::middleware(['auth'])->group(function () {
             ),
         )
         ->name('two-factor.show');
+
+    // Chat routes with rate limiting
+    Route::middleware(['role:admin|member', 'chat.rate_limit:100', 'log.access:chat_access'])->group(function () {
+        Volt::route('/chat', 'chat.index')->name('chat.index');
+        Volt::route('/chat/{chat:slug}', 'chat.show')
+            ->middleware(['permission:view-chat', 'chat.access:member', 'log.access:chat_room_access'])
+            ->name('chat.show');
+        
+        // Admin or chat owner only routes (lower rate limit for management actions)
+        Route::middleware(['chat.access:owner-or-admin', 'permission:manage-chat-members', 'chat.rate_limit:30', 'log.access:chat_management'])->group(function () {
+            Volt::route('/chat/{chat:slug}/manage', 'chat.manage')->name('chat.manage');
+        });
+        
+        // Chat creation route (admin only, strict rate limit)
+        Route::middleware(['role:admin', 'permission:create-chat', 'chat.rate_limit:10'])->group(function () {
+            // Chat creation handled via Livewire component in chat.index
+        });
+    });
+
+    // Notifications (accessible by all authenticated users)
+    Volt::route('/notifications', 'notifications.index')->name('notifications.index');
 });
 
 require __DIR__.'/auth.php';
