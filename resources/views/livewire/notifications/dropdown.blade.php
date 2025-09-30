@@ -180,7 +180,7 @@ mount(function () {
 </div>
 
 <script>
-    let currentUserId = {{ Auth::id() }};
+    window.currentUserId = window.currentUserId || {{ Auth::id() }};
 
     // Request notification permission on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -204,7 +204,7 @@ mount(function () {
 
         // Setup real-time notification listening
         if (window.Echo) {
-            window.Echo.private(`user.${currentUserId}`)
+            window.Echo.private(`user.${window.currentUserId}`)
                 .listen('.notification.sent', (e) => {
                     console.log('New notification received:', e.notification);
                     
@@ -241,7 +241,7 @@ mount(function () {
     // Cleanup when leaving the page
     window.addEventListener('beforeunload', () => {
         if (window.Echo && window.Echo.leave) {
-            window.Echo.leave(`user.${currentUserId}`);
+            window.Echo.leave(`user.${window.currentUserId}`);
         }
     });
 </script>

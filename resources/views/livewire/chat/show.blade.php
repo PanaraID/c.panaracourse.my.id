@@ -285,7 +285,7 @@ new class extends \Livewire\Volt\Component {
 
     <script>
         let chatId = {{ $chat->id }};
-        let currentUserId = {{ Auth::id() }};
+        window.currentUserId = window.currentUserId || {{ Auth::id() }};
         let autoScroll = true;
 
         function scrollToBottom() {

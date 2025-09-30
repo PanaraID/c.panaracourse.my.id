@@ -36,7 +36,7 @@ mount(function () {
 <div>
     <!-- Hidden component for handling initial notifications -->
     <script>
-        let currentUserId = {{ Auth::id() }};
+        window.currentUserId = window.currentUserId || {{ Auth::id() }};
         let hasRequestedPermission = false;
 
         // Request notification permission and show initial notifications

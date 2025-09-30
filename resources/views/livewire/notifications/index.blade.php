@@ -148,7 +148,7 @@ mount(function () {
     </div>
 
     <script>
-        let currentUserId = {{ Auth::id() }};
+        window.currentUserId = window.currentUserId || {{ Auth::id() }};
 
         // Handle real-time notification events
         document.addEventListener('livewire:init', () => {
@@ -161,7 +161,7 @@ mount(function () {
 
             // Setup real-time notification listening
             if (window.Echo) {
-                window.Echo.private(`user.${currentUserId}`)
+                window.Echo.private(`user.${window.currentUserId}`)
                     .listen('.notification.sent', (e) => {
                         console.log('New notification received on index page:', e.notification);
                         

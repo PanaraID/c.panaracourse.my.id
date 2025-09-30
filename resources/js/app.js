@@ -18,6 +18,8 @@ window.Echo = new Echo({
 });
 
 // Global message handling for chat
+window.currentUserId = null;
+
 window.handleNewMessage = function(chatId, callback) {
     if (window.Echo) {
         window.Echo.private(`chat.${chatId}`)
