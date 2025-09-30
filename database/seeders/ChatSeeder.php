@@ -31,54 +31,47 @@ class ChatSeeder extends Seeder
         }
 
         // Create demo chats
-        $generalChat = Chat::create([
-            'title' => 'General Discussion',
-            'description' => 'Tempat diskusi umum untuk semua anggota',
+        Chat::create([
+            'title' => 'Guru All Wilayah',
+            'description' => 'Forum diskusi untuk semua guru di seluruh wilayah',
             'created_by' => $admin->id,
         ]);
 
-        $techChat = Chat::create([
-            'title' => 'Tech Talk',
-            'description' => 'Diskusi seputar teknologi dan programming',
+        Chat::create([
+            'title' => 'Tentor All Wilayah',
+            'description' => 'Komunikasi dan koordinasi tentor di seluruh wilayah',
             'created_by' => $admin->id,
         ]);
 
-        $randomChat = Chat::create([
-            'title' => 'Random Chat',
-            'description' => 'Obrolan santai dan random',
+        Chat::create([
+            'title' => 'PIC Sekolah All Wilayah',
+            'description' => 'Koordinasi Person In Charge sekolah di seluruh wilayah',
             'created_by' => $admin->id,
         ]);
 
-        // Add members to chats
-        $generalChat->members()->attach([$admin->id, $members[0]->id, $members[1]->id]);
-        $techChat->members()->attach([$admin->id, $members[0]->id]);
-        $randomChat->members()->attach([$admin->id, $members[1]->id]);
-
-        // Create some demo messages
-        Message::create([
-            'chat_id' => $generalChat->id,
-            'user_id' => $admin->id,
-            'content' => 'Selamat datang di chat umum! Mari kita diskusi dengan santun.',
+        Chat::create([
+            'title' => 'Training of Tentor Batch 1',
+            'description' => 'Pelatihan dan pengembangan tentor batch pertama',
+            'created_by' => $admin->id,
         ]);
 
-        Message::create([
-            'chat_id' => $generalChat->id,
-            'user_id' => $members[0]->id,
-            'content' => 'Terima kasih! Senang bisa bergabung di sini.',
+        Chat::create([
+            'title' => 'Casis TNI - Polri',
+            'description' => 'Pembahasan dan persiapan calon siswa TNI dan Polri',
+            'created_by' => $admin->id,
         ]);
 
-        Message::create([
-            'chat_id' => $techChat->id,
-            'user_id' => $admin->id,
-            'content' => 'Ada yang mau diskusi tentang Laravel 11?',
+        Chat::create([
+            'title' => 'Casis Kedinasan',
+            'description' => 'Diskusi persiapan calon siswa sekolah kedinasan',
+            'created_by' => $admin->id,
         ]);
 
-        Message::create([
-            'chat_id' => $techChat->id,
-            'user_id' => $members[0]->id,
-            'content' => 'Saya tertarik dengan Livewire Volt yang baru!',
+        Chat::create([
+            'title' => 'Training of Sales Team',
+            'description' => 'Pelatihan dan koordinasi tim sales',
+            'created_by' => $admin->id,
         ]);
-
         $this->command->info('Demo chats and messages created successfully!');
     }
 }

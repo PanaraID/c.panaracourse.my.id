@@ -30,27 +30,30 @@ class DatabaseSeeder extends Seeder
         // Assign admin role to test user if not already assigned
         if (!$testUser->hasRole('admin')) {
             $testUser->assignRole('admin');
+            $this->command->info("Assigned 'admin' role to user: {$testUser->email}");
         }
 
-        // Create some member users
-        $member1 = User::firstOrCreate([
-            'email' => 'member1@example.com'
-        ], [
-            'name' => 'Member One',
+        // Create 5 member users
+        $newUsers = [];
+        
+        for ($i = 1; $i <= 5; $i++) {
+            $member = User::firstOrCreate([
+            'email' => "member{$i}@example.com"
+            ], [
+            'name' => "Member {$i}",
             'password' => bcrypt('password'),
-        ]);
-        if (!$member1->hasRole('member')) {
-            $member1->assignRole('member');
+            ]);
+            
+            if (!$member->hasRole('member')) {
+            $member->assignRole('member');
+            }
+            
+            $newUsers[] = $member;
         }
-
-        $member2 = User::firstOrCreate([
-            'email' => 'member2@example.com'
-        ], [
-            'name' => 'Member Two',
-            'password' => bcrypt('password'),
-        ]);
-        if (!$member2->hasRole('member')) {
-            $member2->assignRole('member');
+        
+        // Print new users to console
+        foreach ($newUsers as $user) {
+            $this->command->info("ID: {$user->id}, Name: {$user->name}, Email: {$user->email}");
         }
 
         // Seed demo chats
