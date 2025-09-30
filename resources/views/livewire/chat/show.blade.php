@@ -90,9 +90,6 @@ new class extends \Livewire\Volt\Component {
             'content' => $this->newMessage,
         ]);
 
-        // Create notifications for other members
-        Notification::createForNewMessage($message);
-
         Log::info('Message sent', [
             'message_id' => $message->id,
             'chat_id' => $this->chat->id,
@@ -312,9 +309,13 @@ new class extends \Livewire\Volt\Component {
         document.addEventListener('livewire:init', () => {
             Livewire.on('new-message-sent', (data) => {
                 if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`Pesan baru di ${data.chat_title}`, {
-                        body: `${data.user_name}: ${data.message}`,
-                        icon: '/favicon.ico'
+                    new Notification(`Ada pesan dari ${data.user_name}`, {
+                        body: `Di {{ $chat->title }}: ${data.message}`,
+                        icon: '/favicon.ico',
+                        tag: 'new-message-' + Date.now(),
+                        badge: '/favicon.ico',
+                        requireInteraction: false,
+                        silent: false
                     });
                 }
                 autoScroll = true;

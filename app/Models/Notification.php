@@ -92,12 +92,15 @@ class Notification extends Model
             static::create([
                 'user_id' => $recipient->id,
                 'type' => 'new_message',
-                'title' => "Pesan baru di {$chat->title}",
-                'message' => "{$sender->name}: " . \Str::limit($message->content, 50),
+                'title' => "Ada pesan dari {$sender->name}",
+                'message' => "Pesan: " . \Str::limit($message->content, 100),
                 'data' => [
                     'chat_slug' => $chat->slug,
+                    'chat_title' => $chat->title,
                     'sender_name' => $sender->name,
+                    'sender_id' => $sender->id,
                     'message_id' => $message->id,
+                    'message_content' => $message->content,
                 ],
                 'related_chat_id' => $chat->id,
                 'related_message_id' => $message->id,

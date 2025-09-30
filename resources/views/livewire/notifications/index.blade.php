@@ -167,10 +167,25 @@ mount(function () {
                         
                         // Show browser notification if permission granted
                         if ('Notification' in window && Notification.permission === 'granted') {
-                            new Notification(e.notification.title, {
-                                body: e.notification.message,
+                            const notification = e.notification;
+                            const data = notification.data || {};
+                            
+                            // Format browser notification based on type
+                            let browserTitle = notification.title;
+                            let browserBody = notification.message;
+                            
+                            if (notification.type === 'new_message' && data.sender_name && data.message_content) {
+                                browserTitle = `Ada pesan dari ${data.sender_name}`;
+                                browserBody = `${data.chat_title ? 'Di ' + data.chat_title + ': ' : ''}${data.message_content}`;
+                            }
+                            
+                            new Notification(browserTitle, {
+                                body: browserBody,
                                 icon: '/favicon.ico',
-                                tag: 'chat-notification-' + e.notification.id
+                                tag: 'chat-notification-' + notification.id,
+                                badge: '/favicon.ico',
+                                requireInteraction: false,
+                                silent: false
                             });
                         }
                         

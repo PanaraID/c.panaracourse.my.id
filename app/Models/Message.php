@@ -31,6 +31,9 @@ class Message extends Model
             // Load the user relationship for broadcasting
             $message->load('user');
             
+            // Create notifications for other members
+            \App\Models\Notification::createForNewMessage($message);
+            
             // Broadcast the new message
             broadcast(new MessageSent($message));
         });

@@ -56,6 +56,7 @@ class NotificationSent implements ShouldBroadcast
                 'type' => $this->notification->type,
                 'title' => $this->notification->title,
                 'message' => $this->notification->message,
+                'data' => $this->notification->data,
                 'related_chat_id' => $this->notification->related_chat_id,
                 'related_message_id' => $this->notification->related_message_id,
                 'created_at' => $this->notification->created_at->toISOString(),
