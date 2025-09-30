@@ -6,94 +6,101 @@ use App\Models\Message;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Validate;
 
-state([
-    'chat' => null,
-    'newMessage' => '',
-    'messages' => collect(),
-]);
+new class extends \Livewire\Volt\Component {
+    public ?Chat $chat = null;
+    public string $newMessage = '';
 
-mount(function (Chat $chat) {
-    // Check if user is member of this chat
-    if (!$chat->members->contains(Auth::user()) && !Auth::user()->hasRole('admin')) {
-        abort(403, 'Anda tidak memiliki akses ke chat ini.');
+    public function messages()
+    {
+        return $this->chat 
+            ? $this->chat->messages()->with('user')->latest()->take(50)->get()
+            : collect();
     }
 
-    $this->chat = $chat;
-    $this->loadMessages();
+    public function mount(Chat $chat)
+    {
+        // Check if user is member of this chat
+        if (!$chat->members->contains(Auth::user()) && !Auth::user()->hasRole('admin')) {
+            abort(403, 'Anda tidak memiliki akses ke chat ini.');
+        }
 
-    Log::info('User accessed chat', [
-        'chat_id' => $chat->id,
-        'chat_title' => $chat->title,
-        'user_name' => Auth::user()->name,
-        'user_id' => Auth::id(),
-    ]);
-});
+        $this->chat = $chat;
 
-$loadMessages = function () {
-    $this->messages = $this->chat->messages()->with('user')->latest()->take(50)->get()->reverse();
-};
-
-$sendMessage = function () {
-    $this->validate([
-        'newMessage' => 'required|string|max:1000',
-    ]);
-
-    $message = Message::create([
-        'chat_id' => $this->chat->id,
-        'user_id' => Auth::id(),
-        'content' => $this->newMessage,
-    ]);
-
-    // Create notifications for other members
-    Notification::createForNewMessage($message);
-
-    Log::info('Message sent', [
-        'message_id' => $message->id,
-        'chat_id' => $this->chat->id,
-        'chat_title' => $this->chat->title,
-        'user_name' => Auth::user()->name,
-        'user_id' => Auth::id(),
-        'content_length' => strlen($this->newMessage),
-    ]);
-
-    $this->reset('newMessage');
-    $this->loadMessages();
-
-    // Dispatch browser notification
-    $this->dispatch('new-message-sent', [
-        'chat_title' => $this->chat->title,
-        'user_name' => Auth::user()->name,
-        'message' => \Str::limit($message->content, 50),
-    ]);
-};
-
-$deleteMessage = function ($messageId) {
-    $message = Message::findOrFail($messageId);
-
-    // Only sender or admin can delete
-    if ($message->user_id === Auth::id() || Auth::user()->hasRole('admin')) {
-        Log::info('Message deleted', [
-            'message_id' => $message->id,
-            'chat_id' => $this->chat->id,
-            'deleted_by' => Auth::user()->name,
+        Log::info('User accessed chat', [
+            'chat_id' => $chat->id,
+            'chat_title' => $chat->title,
+            'user_name' => Auth::user()->name,
             'user_id' => Auth::id(),
         ]);
+    }
 
-        $message->delete();
-        $this->loadMessages();
+    public function sendMessage()
+    {
+        $this->newMessage = trim($this->newMessage);
+        if (strlen($this->newMessage) < 1) {
+            $this->addError('newMessage', 'Pesan harus terdiri dari minimal 1 karakter.');
+            return;
+        }
+        if (strlen($this->newMessage) > 1000) {
+            $this->addError('newMessage', 'Pesan tidak boleh lebih dari 1000 karakter.');
+            return;
+        }
+
+        $message = Message::create([
+            'chat_id' => $this->chat->id,
+            'user_id' => Auth::id(),
+            'content' => $this->newMessage,
+        ]);
+
+        // Create notifications for other members
+        Notification::createForNewMessage($message);
+
+        Log::info('Message sent', [
+            'message_id' => $message->id,
+            'chat_id' => $this->chat->id,
+            'chat_title' => $this->chat->title,
+            'user_name' => Auth::user()->name,
+            'user_id' => Auth::id(),
+            'content_length' => strlen($this->newMessage),
+        ]);
+
+        $this->reset('newMessage');
+
+        // Dispatch browser notification
+        $this->dispatch('new-message-sent', [
+            'chat_title' => $this->chat->title,
+            'user_name' => Auth::user()->name,
+            'message' => \Str::limit($message->content, 50),
+        ]);
+    }
+
+    public function deleteMessage($messageId)
+    {
+        $message = Message::findOrFail($messageId);
+
+        // Only sender or admin can delete
+        if ($message->user_id === Auth::id() || Auth::user()->hasRole('admin')) {
+            Log::info('Message deleted', [
+                'message_id' => $message->id,
+                'chat_id' => $this->chat->id,
+                'deleted_by' => Auth::user()->name,
+                'user_id' => Auth::id(),
+            ]);
+
+            $message->delete();
+        }
+    }
+
+    #[\Livewire\Attributes\On('message-received')]
+    public function onMessageReceived()
+    {
+        // The computed property will automatically refresh
     }
 };
 
-// Listen for new messages from other users
-on([
-    'message-received' => function () {
-        $this->loadMessages();
-    },
-]);
-
 ?>
-
 <div>
     <div class="flex flex-col h-screen bg-gray-50">
         <!-- Chat Header -->
@@ -132,7 +139,7 @@ on([
 
         <!-- Messages Container -->
         <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            @forelse($messages as $message)
+            @forelse($this->messages() as $message)
                 <div class="flex {{ $message->user_id === Auth::id() ? 'justify-end' : 'justify-start' }}">
                     <div class="max-w-xs lg:max-w-md">
                         <div
@@ -206,8 +213,7 @@ on([
                         @enderror
                     </div>
                     <button type="submit"
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="!newMessage.trim()">
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>

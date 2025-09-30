@@ -157,7 +157,7 @@ $markAllAsRead = function () {
     // Auto-refresh notifications every 30 seconds
     setInterval(() => {
         if (document.visibilityState === 'visible') {
-            Livewire.find(@this.getId()).call('$refresh');
+            @this.call('$refresh');
         }
     }, 30000);
 </script>
