@@ -160,14 +160,15 @@ new class extends \Livewire\Volt\Component {
 };
 
 ?>
+
 <div>
-    <div class="flex flex-col h-screen bg-gray-50">
+    <div class="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
         <!-- Chat Header -->
-        <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-xl font-semibold text-gray-900">{{ $chat->title }}</h1>
-                    <p class="text-sm text-gray-600">
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ $chat->title }}</h1>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
                         {{ $chat->members->count() }} anggota
                         @if ($chat->description)
                             • {{ $chat->description }}
@@ -176,7 +177,7 @@ new class extends \Livewire\Volt\Component {
                 </div>
                 <div class="flex items-center space-x-4">
                     @if (Auth::user()->hasRole('admin') || $chat->created_by === Auth::id())
-                        <a href="{{ route('chat.manage', $chat->slug) }}" class="text-gray-600 hover:text-gray-800">
+                        <a href="{{ route('chat.manage', $chat->slug) }}" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
@@ -186,7 +187,7 @@ new class extends \Livewire\Volt\Component {
                             </svg>
                         </a>
                     @endif
-                    <a href="{{ route('chat.index') }}" class="text-gray-600 hover:text-gray-800">
+                    <a href="{{ route('chat.index') }}" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -206,7 +207,7 @@ new class extends \Livewire\Volt\Component {
                             <!-- Avatar -->
                             <div class="flex-shrink-0">
                                 <div
-                                    class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-gray-700">
+                                    class="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-200">
                                     {{ $message->user->initials() }}
                                 </div>
                             </div>
@@ -214,9 +215,9 @@ new class extends \Livewire\Volt\Component {
                             <!-- Message Bubble -->
                             <div class="relative">
                                 <div
-                                    class="{{ $message->user_id === Auth::id() ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-900' }} px-4 py-2 rounded-lg shadow-sm">
+                                    class="{{ $message->user_id === Auth::id() ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100' }} px-4 py-2 rounded-lg shadow-sm">
                                     <div
-                                        class="text-xs {{ $message->user_id === Auth::id() ? 'text-blue-100' : 'text-gray-500' }} mb-1">
+                                        class="text-xs {{ $message->user_id === Auth::id() ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400' }} mb-1">
                                         {{ $message->user->name }}
                                         @if ($message->is_edited)
                                             <span class="italic">(edited)</span>
@@ -224,7 +225,7 @@ new class extends \Livewire\Volt\Component {
                                     </div>
                                     <div class="text-sm">{{ $message->content }}</div>
                                     <div
-                                        class="text-xs {{ $message->user_id === Auth::id() ? 'text-blue-100' : 'text-gray-400' }} mt-1">
+                                        class="text-xs {{ $message->user_id === Auth::id() ? 'text-blue-100' : 'text-gray-400 dark:text-gray-500' }} mt-1">
                                         {{ $message->created_at->format('H:i') }}
                                     </div>
                                 </div>
@@ -235,7 +236,7 @@ new class extends \Livewire\Volt\Component {
                                         class="absolute -top-2 {{ $message->user_id === Auth::id() ? '-left-8' : '-right-8' }} opacity-0 hover:opacity-100 transition-opacity">
                                         <button wire:click="deleteMessage({{ $message->id }})"
                                             wire:confirm="Apakah Anda yakin ingin menghapus pesan ini?"
-                                            class="w-6 h-6 bg-red-100 hover:bg-red-200 text-red-600 rounded-full flex items-center justify-center text-xs">
+                                            class="w-6 h-6 bg-red-100 dark:bg-red-800 hover:bg-red-200 dark:hover:bg-red-700 text-red-600 dark:text-red-300 rounded-full flex items-center justify-center text-xs">
                                             ×
                                         </button>
                                     </div>
@@ -246,29 +247,29 @@ new class extends \Livewire\Volt\Component {
                 </div>
             @empty
                 <div class="text-center py-12">
-                    <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
+                    <div class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
                             </path>
                         </svg>
                     </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada pesan</h3>
-                    <p class="text-gray-500">Mulai percakapan dengan mengirim pesan pertama!</p>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Belum ada pesan</h3>
+                    <p class="text-gray-500 dark:text-gray-400">Mulai percakapan dengan mengirim pesan pertama!</p>
                 </div>
             @endforelse
         </div>
 
         <!-- Message Input -->
         @can('send-message')
-            <div class="bg-white border-t border-gray-200 px-6 py-4">
+            <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
                 <form wire:submit="sendMessage" class="flex space-x-4">
                     <div class="flex-1">
                         <input wire:model="newMessage" type="text" placeholder="Ketik pesan..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                             maxlength="1000">
                         @error('newMessage')
-                            <span class="text-red-500 text-xs">{{ $message }}</span>
+                            <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span>
                         @enderror
                     </div>
                     <button type="submit"
@@ -374,3 +375,4 @@ new class extends \Livewire\Volt\Component {
         }
     </script>
 </div>
+
