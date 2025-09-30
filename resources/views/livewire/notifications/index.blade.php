@@ -1,11 +1,20 @@
 <?php
 
-use function Livewire\Volt\{computed, state, on};
+use function Livewire\Volt\{computed, state, on, mount};
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 
+state(['lastNotificationId' => 0]);
+
 $notifications = computed(function () {
-    return Auth::user()->notifications()->latest()->paginate(20);
+    $notifications = Auth::user()->notifications()->latest()->paginate(20);
+    
+    // Update last notification ID to track new notifications
+    if ($notifications->isNotEmpty()) {
+        $this->lastNotificationId = $notifications->first()->id;
+    }
+    
+    return $notifications;
 });
 
 $markAsRead = function ($notificationId) {
@@ -24,9 +33,28 @@ $markAllAsRead = function () {
     session()->flash('success', 'Semua notifikasi telah ditandai sebagai dibaca.');
 };
 
+$refreshNotifications = function () {
+    // Check if there are new notifications
+    $latestNotification = Auth::user()->notifications()->latest()->first();
+    
+    if ($latestNotification && $latestNotification->id > $this->lastNotificationId) {
+        // There are new notifications, refresh the component
+        $this->lastNotificationId = $latestNotification->id;
+        
+        // Dispatch event for new notification
+        $this->dispatch('new-notification-received');
+    }
+};
+
+mount(function () {
+    // Set initial last notification ID
+    $lastNotification = Auth::user()->notifications()->latest()->first();
+    $this->lastNotificationId = $lastNotification ? $lastNotification->id : 0;
+});
+
 ?>
 
-<div>
+<div wire:poll.5s="refreshNotifications">
 
     <div class="max-w-4xl mx-auto p-6">
         <!-- Header -->
@@ -111,4 +139,43 @@ $markAllAsRead = function () {
             </div>
         @endif
     </div>
+
+    <script>
+        let currentUserId = {{ Auth::id() }};
+
+        // Handle real-time notification events
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('new-notification-received', () => {
+                // Show toast notification for new notification
+                if (typeof toastr !== 'undefined') {
+                    toastr.info('Notifikasi baru diterima!');
+                }
+            });
+
+            // Setup real-time notification listening
+            if (window.Echo) {
+                window.Echo.private(`user.${currentUserId}`)
+                    .listen('.notification.sent', (e) => {
+                        console.log('New notification received on index page:', e.notification);
+                        
+                        // Show browser notification if permission granted
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(e.notification.title, {
+                                body: e.notification.message,
+                                icon: '/favicon.ico',
+                                tag: 'chat-notification-' + e.notification.id
+                            });
+                        }
+                        
+                        // Refresh the notifications
+                        @this.call('refreshNotifications');
+                    });
+            }
+        });
+
+        // Request notification permission on page load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
 </div>

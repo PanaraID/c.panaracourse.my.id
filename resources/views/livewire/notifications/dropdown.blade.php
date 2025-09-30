@@ -4,13 +4,20 @@ use function Livewire\Volt\{computed, state, on, mount};
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 
-state(['showDropdown' => false]);
+state(['showDropdown' => false, 'lastNotificationId' => 0]);
 
 $notifications = computed(function () {
-    return Auth::user()->notifications()
+    $notifications = Auth::user()->notifications()
         ->latest()
         ->take(10)
         ->get();
+    
+    // Update last notification ID to track new notifications
+    if ($notifications->isNotEmpty()) {
+        $this->lastNotificationId = $notifications->first()->id;
+    }
+    
+    return $notifications;
 });
 
 $unreadCount = computed(function () {
@@ -31,9 +38,28 @@ $markAllAsRead = function () {
     Auth::user()->notifications()->unread()->update(['read_at' => now()]);
 };
 
+$refreshNotifications = function () {
+    // Check if there are new notifications
+    $latestNotification = Auth::user()->notifications()->latest()->first();
+    
+    if ($latestNotification && $latestNotification->id > $this->lastNotificationId) {
+        // There are new notifications, refresh the component
+        $this->lastNotificationId = $latestNotification->id;
+        
+        // Dispatch event for new notification
+        $this->dispatch('new-notification-received');
+    }
+};
+
+mount(function () {
+    // Set initial last notification ID
+    $lastNotification = Auth::user()->notifications()->latest()->first();
+    $this->lastNotificationId = $lastNotification ? $lastNotification->id : 0;
+});
+
 ?>
 
-<div class="relative" x-data="{ open: @entangle('showDropdown') }">
+<div class="relative" x-data="{ open: @entangle('showDropdown') }" wire:poll.5s="refreshNotifications">
     <!-- Notification Bell -->
     <button 
         @click="open = !open"
@@ -45,7 +71,7 @@ $markAllAsRead = function () {
         
         <!-- Badge -->
         @if($this->unreadCount > 0)
-            <span class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
                 {{ $this->unreadCount > 99 ? '99+' : $this->unreadCount }}
             </span>
         @endif
@@ -147,6 +173,8 @@ $markAllAsRead = function () {
 </div>
 
 <script>
+    let currentUserId = {{ Auth::id() }};
+
     // Request notification permission on page load
     document.addEventListener('DOMContentLoaded', function() {
         if ('Notification' in window && Notification.permission === 'default') {
@@ -154,10 +182,44 @@ $markAllAsRead = function () {
         }
     });
 
-    // Auto-refresh notifications every 30 seconds
-    setInterval(() => {
-        if (document.visibilityState === 'visible') {
-            @this.call('$refresh');
+    // Handle real-time notification events
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('new-notification-received', () => {
+            // Add visual feedback for new notification
+            const bell = document.querySelector('.relative svg');
+            if (bell) {
+                bell.classList.add('animate-bounce');
+                setTimeout(() => {
+                    bell.classList.remove('animate-bounce');
+                }, 1000);
+            }
+        });
+
+        // Setup real-time notification listening
+        if (window.Echo) {
+            window.Echo.private(`user.${currentUserId}`)
+                .listen('.notification.sent', (e) => {
+                    console.log('New notification received:', e.notification);
+                    
+                    // Show browser notification if permission granted
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification(e.notification.title, {
+                            body: e.notification.message,
+                            icon: '/favicon.ico',
+                            tag: 'chat-notification-' + e.notification.id
+                        });
+                    }
+                    
+                    // Refresh the notifications dropdown
+                    @this.call('refreshNotifications');
+                });
         }
-    }, 30000);
+    });
+
+    // Cleanup when leaving the page
+    window.addEventListener('beforeunload', () => {
+        if (window.Echo && window.Echo.leave) {
+            window.Echo.leave(`user.${currentUserId}`);
+        }
+    });
 </script>

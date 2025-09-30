@@ -11,12 +11,22 @@ use Livewire\Attributes\Validate;
 new class extends \Livewire\Volt\Component {
     public ?Chat $chat = null;
     public string $newMessage = '';
+    public int $lastMessageId = 0;
 
     public function messages()
     {
-        return $this->chat 
-            ? $this->chat->messages()->with('user')->latest()->take(50)->get()
-            : collect();
+        if (!$this->chat) {
+            return collect();
+        }
+
+        $messages = $this->chat->messages()->with('user')->latest()->take(50)->get()->values();
+
+        // Update last message ID to track new messages
+        if ($messages->isNotEmpty()) {
+            $this->lastMessageId = $messages->last()->id;
+        }
+
+        return $messages;
     }
 
     public function mount(Chat $chat)
@@ -27,6 +37,10 @@ new class extends \Livewire\Volt\Component {
         }
 
         $this->chat = $chat;
+
+        // Set initial last message ID
+        $lastMessage = $this->chat->messages()->latest()->first();
+        $this->lastMessageId = $lastMessage ? $lastMessage->id : 0;
 
         Log::info('User accessed chat', [
             'chat_id' => $chat->id,
@@ -68,6 +82,9 @@ new class extends \Livewire\Volt\Component {
 
         $this->reset('newMessage');
 
+        // Update last message ID
+        $this->lastMessageId = $message->id;
+
         // Dispatch browser notification
         $this->dispatch('new-message-sent', [
             'chat_title' => $this->chat->title,
@@ -90,6 +107,20 @@ new class extends \Livewire\Volt\Component {
             ]);
 
             $message->delete();
+        }
+    }
+
+    public function refreshMessages()
+    {
+        // Check if there are new messages
+        $latestMessage = $this->chat->messages()->latest()->first();
+        
+        if ($latestMessage && $latestMessage->id > $this->lastMessageId) {
+            // There are new messages, refresh the component
+            $this->lastMessageId = $latestMessage->id;
+            
+            // Dispatch event to scroll to bottom
+            $this->dispatch('new-messages-loaded');
         }
     }
 
@@ -138,7 +169,7 @@ new class extends \Livewire\Volt\Component {
         </div>
 
         <!-- Messages Container -->
-        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4" wire:poll.3s="refreshMessages">
             @forelse($this->messages() as $message)
                 <div class="flex {{ $message->user_id === Auth::id() ? 'justify-end' : 'justify-start' }}">
                     <div class="max-w-xs lg:max-w-md">
@@ -225,15 +256,23 @@ new class extends \Livewire\Volt\Component {
     </div>
 
     <script>
-        // Auto scroll to bottom when new messages arrive
-        document.addEventListener('livewire:updated', () => {
+        let chatId = {{ $chat->id }};
+        let currentUserId = {{ Auth::id() }};
+        let autoScroll = true;
+
+        function scrollToBottom() {
             const container = document.querySelector('.overflow-y-auto');
-            if (container) {
+            if (container && autoScroll) {
                 container.scrollTop = container.scrollHeight;
             }
+        }
+
+        // Auto scroll to bottom when new messages arrive
+        document.addEventListener('livewire:updated', () => {
+            setTimeout(scrollToBottom, 100);
         });
 
-        // Handle browser notifications
+        // Handle browser notifications and events
         document.addEventListener('livewire:init', () => {
             Livewire.on('new-message-sent', (data) => {
                 if ('Notification' in window && Notification.permission === 'granted') {
@@ -242,7 +281,32 @@ new class extends \Livewire\Volt\Component {
                         icon: '/favicon.ico'
                     });
                 }
+                autoScroll = true;
+                setTimeout(scrollToBottom, 100);
+            });
+
+            Livewire.on('new-messages-loaded', () => {
+                setTimeout(scrollToBottom, 100);
             });
         });
+
+        // Track scroll position to determine auto-scroll behavior
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.querySelector('.overflow-y-auto');
+            if (container) {
+                container.addEventListener('scroll', () => {
+                    const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 10;
+                    autoScroll = isAtBottom;
+                });
+                
+                // Initial scroll to bottom
+                setTimeout(scrollToBottom, 200);
+            }
+        });
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
     </script>
 </div>

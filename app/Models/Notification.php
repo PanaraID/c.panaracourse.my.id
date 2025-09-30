@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Events\NotificationSent;
 
 class Notification extends Model
 {
@@ -22,6 +23,14 @@ class Notification extends Model
         'data' => 'array',
         'read_at' => 'datetime'
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Notification $notification) {
+            // Broadcast the new notification
+            broadcast(new NotificationSent($notification));
+        });
+    }
 
     public function user(): BelongsTo
     {

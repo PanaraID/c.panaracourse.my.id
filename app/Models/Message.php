@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Events\MessageSent;
 
 class Message extends Model
 {
@@ -23,6 +24,17 @@ class Message extends Model
         'is_edited' => 'boolean',
         'edited_at' => 'datetime'
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Message $message) {
+            // Load the user relationship for broadcasting
+            $message->load('user');
+            
+            // Broadcast the new message
+            broadcast(new MessageSent($message));
+        });
+    }
 
     public function chat(): BelongsTo
     {

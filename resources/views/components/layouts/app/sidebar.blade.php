@@ -12,14 +12,7 @@
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     @role('admin|member')
                         <flux:navlist.item icon="chat-bubble-left-right" :href="route('chat.index')" :current="request()->routeIs('chat.*')" wire:navigate>{{ __('Chat') }}</flux:navlist.item>
-                        <flux:navlist.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.*')" wire:navigate>
-                            {{ __('Notifikasi') }}
-                            @if(auth()->user()->unreadNotificationsCount() > 0)
-                                <span class="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                                    {{ auth()->user()->unreadNotificationsCount() > 99 ? '99+' : auth()->user()->unreadNotificationsCount() }}
-                                </span>
-                            @endif
-                        </flux:navlist.item>
+                        <livewire:components.notification-nav-item />
                     @endrole
                 </flux:navlist.group>
             </flux:navlist>
