@@ -42,12 +42,34 @@ new class extends \Livewire\Volt\Component {
         $lastMessage = $this->chat->messages()->latest()->first();
         $this->lastMessageId = $lastMessage ? $lastMessage->id : 0;
 
+        // Mark all chat-related notifications as read
+        $this->markChatNotificationsAsRead();
+
         Log::info('User accessed chat', [
             'chat_id' => $chat->id,
             'chat_title' => $chat->title,
             'user_name' => Auth::user()->name,
             'user_id' => Auth::id(),
         ]);
+    }
+
+    public function markChatNotificationsAsRead()
+    {
+        // Mark all unread notifications related to this chat as read
+        $updatedCount = Notification::markChatNotificationsAsRead(Auth::id(), $this->chat->id);
+
+        if ($updatedCount > 0) {
+            Log::info('Chat notifications marked as read', [
+                'chat_id' => $this->chat->id,
+                'user_id' => Auth::id(),
+                'notifications_count' => $updatedCount,
+            ]);
+
+            // Dispatch event to refresh notification components
+            $this->dispatch('notifications-updated');
+        }
+
+        return $updatedCount;
     }
 
     public function sendMessage()
@@ -119,9 +141,18 @@ new class extends \Livewire\Volt\Component {
             // There are new messages, refresh the component
             $this->lastMessageId = $latestMessage->id;
             
+            // Mark new chat notifications as read since user is actively viewing
+            $this->markChatNotificationsAsRead();
+            
             // Dispatch event to scroll to bottom
             $this->dispatch('new-messages-loaded');
         }
+    }
+
+    public function markNotificationsRead()
+    {
+        // Public method that can be called from JavaScript
+        $this->markChatNotificationsAsRead();
     }
 
     #[\Livewire\Attributes\On('message-received')]
@@ -267,6 +298,11 @@ new class extends \Livewire\Volt\Component {
             }
         }
 
+        function markNotificationsAsRead() {
+            // Call Livewire method to mark notifications as read
+            @this.call('markNotificationsRead');
+        }
+
         // Auto scroll to bottom when new messages arrive
         document.addEventListener('livewire:updated', () => {
             setTimeout(scrollToBottom, 100);
@@ -302,6 +338,33 @@ new class extends \Livewire\Volt\Component {
                 // Initial scroll to bottom
                 setTimeout(scrollToBottom, 200);
             }
+        });
+
+        // Mark notifications as read when user becomes active or page becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // Page became visible, mark notifications as read
+                markNotificationsAsRead();
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            // Window got focus, mark notifications as read
+            markNotificationsAsRead();
+        });
+
+        // Mark notifications as read when user clicks anywhere in the chat
+        document.addEventListener('click', () => {
+            markNotificationsAsRead();
+        });
+
+        // Mark notifications as read when user scrolls (showing engagement)
+        let scrollTimeout;
+        document.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                markNotificationsAsRead();
+            }, 1000); // Wait 1 second after scrolling stops
         });
 
         // Request notification permission

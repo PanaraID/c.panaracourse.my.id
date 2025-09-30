@@ -67,6 +67,19 @@ class Notification extends Model
         return $query->where('user_id', $userId);
     }
 
+    public function scopeForChat($query, $chatId)
+    {
+        return $query->where('related_chat_id', $chatId);
+    }
+
+    public static function markChatNotificationsAsRead($userId, $chatId): int
+    {
+        return static::where('user_id', $userId)
+            ->where('related_chat_id', $chatId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+    }
+
     public static function createForNewMessage(Message $message): void
     {
         $chat = $message->chat;

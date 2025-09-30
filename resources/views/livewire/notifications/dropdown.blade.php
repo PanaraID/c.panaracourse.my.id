@@ -51,6 +51,13 @@ $refreshNotifications = function () {
     }
 };
 
+$onNotificationsUpdated = function () {
+    // Force refresh when notifications are updated (e.g., marked as read)
+    // This will re-compute all computed properties
+};
+
+on(['notifications-updated' => $onNotificationsUpdated]);
+
 mount(function () {
     // Set initial last notification ID
     $lastNotification = Auth::user()->notifications()->latest()->first();

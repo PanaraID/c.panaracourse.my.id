@@ -11,6 +11,12 @@ $refreshUnreadCount = function () {
     // This will trigger a re-computation of unreadCount
 };
 
+$onNotificationsUpdated = function () {
+    // Force refresh when notifications are updated
+};
+
+on(['notifications-updated' => $onNotificationsUpdated]);
+
 ?>
 
 <flux:navlist.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.*')" wire:navigate wire:poll.10s="refreshUnreadCount">
