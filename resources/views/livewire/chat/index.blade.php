@@ -133,6 +133,7 @@ new class extends Component {
                                 @if (Auth::user()->hasRole('admin') || $chat->created_by === Auth::id())
                                     <button wire:click="deleteChat({{ $chat->id }})"
                                         wire:confirm="Apakah Anda yakin ingin menghapus chat ini?"
+                                        wire:confirm.prompt="Apakah Anda yakin?\n\nKetik HAPUS untuk konfirmasi|HAPUS"
                                         class="text-red-600 hover:text-red-800">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
