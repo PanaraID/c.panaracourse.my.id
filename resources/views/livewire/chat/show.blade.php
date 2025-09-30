@@ -312,9 +312,9 @@ new class extends \Livewire\Volt\Component {
                 if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification(`Ada pesan dari ${data.user_name}`, {
                         body: `Di {{ $chat->title }}: ${data.message}`,
-                        icon: '/favicon.ico',
+                        icon: '/logo.png',
                         tag: 'new-message-' + Date.now(),
-                        badge: '/favicon.ico',
+                        badge: '/logo.png',
                         requireInteraction: false,
                         silent: false
                     });

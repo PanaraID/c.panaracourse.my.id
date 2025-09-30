@@ -224,9 +224,9 @@ mount(function () {
                         
                         new Notification(browserTitle, {
                             body: browserBody,
-                            icon: '/favicon.ico',
+                            icon: '/logo.png',
                             tag: 'chat-notification-' + notification.id,
-                            badge: '/favicon.ico',
+                            badge: '/logo.png',
                             requireInteraction: false,
                             silent: false
                         });

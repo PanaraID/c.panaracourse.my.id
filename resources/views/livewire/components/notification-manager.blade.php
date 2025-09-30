@@ -85,9 +85,9 @@ mount(function () {
                             
                             new Notification(browserTitle, {
                                 body: browserBody,
-                                icon: '/favicon.ico',
+                                icon: '/logo.png',
                                 tag: 'unread-notification-' + notification.id,
-                                badge: '/favicon.ico',
+                                badge: '/logo.png',
                                 requireInteraction: true, // Keep notification visible until user interacts
                                 silent: false
                             });

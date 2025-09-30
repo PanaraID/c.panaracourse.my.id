@@ -3,8 +3,12 @@ const urlsToCache = [
   '/',
   '/manifest.json',
   '/favicon.ico',
+  '/favicon.png',
   '/favicon.svg',
+  '/logo.png',
   '/apple-touch-icon.png',
+  '/favicon-16x16.png',
+  '/favicon-32x32.png',
   // Assets yang akan di-cache saat runtime
 ];
 
