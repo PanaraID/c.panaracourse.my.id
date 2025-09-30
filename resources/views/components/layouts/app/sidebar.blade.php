@@ -18,13 +18,6 @@
 
             <flux:spacer />
 
-            <!-- Desktop Notifications -->
-            @role('admin|member')
-                <div class="hidden lg:block px-4 mb-4">
-                    <livewire:notifications.dropdown />
-                </div>
-            @endrole
-
             <!-- Desktop User Menu -->
             <flux:dropdown class="hidden lg:block" position="bottom" align="start">
                 <flux:profile

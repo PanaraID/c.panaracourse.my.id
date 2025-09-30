@@ -151,7 +151,6 @@ new class extends Component {
 
                         <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
                             <span>{{ $chat->members_count }} anggota</span>
-                            <span>{{ $chat->messages_count }} pesan</span>
                         </div>
 
                         <div class="flex justify-between items-center">
