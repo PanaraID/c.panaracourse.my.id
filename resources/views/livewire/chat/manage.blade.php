@@ -49,7 +49,9 @@ new class extends \Livewire\Volt\Component {
         $usersToAdd = User::whereIn('id', $this->selectedUsers)->get();
 
         foreach ($usersToAdd as $user) {
-            $this->chat->members()->attach($user->id);
+            if (!$this->chat->members->contains($user->id)) {
+                $this->chat->members()->attach($user->id);
+            }
 
             Log::info('User added to chat', [
                 'chat_id' => $this->chat->id,
@@ -259,7 +261,7 @@ new class extends \Livewire\Volt\Component {
                         </button>
                         <button wire:click="addMembers" :disabled="selectedUsers.length === 0"
                             class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            Tambah ({{ count($selectedUsers) }})
+                            Tambah Anggota
                         </button>
                     </div>
                 </div>
