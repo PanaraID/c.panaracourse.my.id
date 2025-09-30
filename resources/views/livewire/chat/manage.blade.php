@@ -1,104 +1,112 @@
 <?php
 
-use function Livewire\Volt\{computed, state, on, mount};
 use App\Models\Chat;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Message;
 use Illuminate\Support\Facades\Log;
 
-state([
-    'chat' => null,
-    'showAddMemberModal' => false,
-    'selectedUsers' => [],
-    'searchQuery' => '',
-]);
+new class extends \Livewire\Volt\Component {
+    public Chat $chat;
+    public bool $showAddMemberModal = false;
+    public array $selectedUsers = [];
+    public string $searchQuery = '';
 
-mount(function (Chat $chat) {
-    // Check if user can manage this chat
-    if (!Auth::user()->hasRole('admin') && $chat->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengelola chat ini.');
+    public string $title = '';
+    public string $description = '';
+
+    public function mount(Chat $chat): void
+    {
+        // Check if user can manage this chat
+        if (!auth()->user()->hasRole('admin') && $chat->created_by !== auth()->id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola chat ini.');
+        }
+
+        $this->chat = $chat;
+        $this->title = $chat->title;
+        $this->description = $chat->description;
     }
 
-    $this->chat = $chat;
-});
+    public function getAvailableUsersProperty()
+    {
+        if (empty($this->searchQuery)) {
+            return collect();
+        }
 
-$availableUsers = computed(function () {
-    if (empty($this->searchQuery)) {
-        return collect();
+        return User::where('name', 'like', '%' . $this->searchQuery . '%')
+            ->orWhere('email', 'like', '%' . $this->searchQuery . '%')
+            ->whereNotIn('id', $this->chat->members->pluck('id'))
+            ->limit(10)
+            ->get();
     }
 
-    return User::where('name', 'like', '%' . $this->searchQuery . '%')
-        ->orWhere('email', 'like', '%' . $this->searchQuery . '%')
-        ->whereNotIn('id', $this->chat->members->pluck('id'))
-        ->limit(10)
-        ->get();
-});
+    public function addMembers(): void
+    {
+        $this->validate([
+            'selectedUsers' => 'required|array|min:1',
+            'selectedUsers.*' => 'exists:users,id',
+        ]);
 
-$addMembers = function () {
-    $this->validate([
-        'selectedUsers' => 'required|array|min:1',
-        'selectedUsers.*' => 'exists:users,id',
-    ]);
+        $usersToAdd = User::whereIn('id', $this->selectedUsers)->get();
 
-    $usersToAdd = User::whereIn('id', $this->selectedUsers)->get();
+        foreach ($usersToAdd as $user) {
+            $this->chat->members()->attach($user->id);
 
-    foreach ($usersToAdd as $user) {
-        $this->chat->members()->attach($user->id);
+            Log::info('User added to chat', [
+                'chat_id' => $this->chat->id,
+                'chat_title' => $this->chat->title,
+                'added_user_name' => $user->name,
+                'added_user_id' => $user->id,
+                'added_by' => auth()->user()->name,
+                'added_by_id' => auth()->id(),
+            ]);
+        }
 
-        Log::info('User added to chat', [
+        $this->reset(['selectedUsers', 'searchQuery', 'showAddMemberModal']);
+        $this->chat->load('members');
+    }
+
+    public function removeMember(int $userId): void
+    {
+        $user = User::findOrFail($userId);
+
+        // Prevent removing the creator
+        if ($userId === $this->chat->created_by) {
+            return;
+        }
+
+        $this->chat->members()->detach($userId);
+
+        Log::info('User removed from chat', [
             'chat_id' => $this->chat->id,
             'chat_title' => $this->chat->title,
-            'added_user_name' => $user->name,
-            'added_user_id' => $user->id,
-            'added_by' => Auth::user()->name,
-            'added_by_id' => Auth::id(),
+            'removed_user_name' => $user->name,
+            'removed_user_id' => $user->id,
+            'removed_by' => auth()->user()->name,
+            'removed_by_id' => auth()->id(),
         ]);
+
+        $this->chat->load('members');
     }
 
-    $this->reset(['selectedUsers', 'searchQuery', 'showAddMemberModal']);
-    $this->chat->load('members'); // Refresh members
-};
+    public function updateChatInfo(): void
+    {
+        $this->validate([
+            'chat.title' => 'required|string|max:255',
+            'chat.description' => 'nullable|string|max:1000',
+        ]);
 
-$removeMember = function ($userId) {
-    $user = User::findOrFail($userId);
+        $this->chat->save();
 
-    // Prevent removing the creator
-    if ($userId === $this->chat->created_by) {
-        return;
+        Log::info('Chat info updated', [
+            'chat_id' => $this->chat->id,
+            'title' => $this->chat->title,
+            'updated_by' => auth()->user()->name,
+            'user_id' => auth()->id(),
+        ]);
+
+        session()->flash('success', 'Informasi chat berhasil diperbarui.');
     }
-
-    $this->chat->members()->detach($userId);
-
-    Log::info('User removed from chat', [
-        'chat_id' => $this->chat->id,
-        'chat_title' => $this->chat->title,
-        'removed_user_name' => $user->name,
-        'removed_user_id' => $user->id,
-        'removed_by' => Auth::user()->name,
-        'removed_by_id' => Auth::id(),
-    ]);
-
-    $this->chat->load('members'); // Refresh members
-};
-
-$updateChatInfo = function () {
-    $this->validate([
-        'chat.title' => 'required|string|max:255',
-        'chat.description' => 'nullable|string|max:1000',
-    ]);
-
-    $this->chat->save();
-
-    Log::info('Chat info updated', [
-        'chat_id' => $this->chat->id,
-        'title' => $this->chat->title,
-        'updated_by' => Auth::user()->name,
-        'user_id' => Auth::id(),
-    ]);
-
-    session()->flash('success', 'Informasi chat berhasil diperbarui.');
-};
-
+}
 ?>
 
 <div>
@@ -132,7 +140,7 @@ $updateChatInfo = function () {
                             <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
                                 Judul Chat
                             </label>
-                            <input wire:model="chat.title" type="text" id="title"
+                            <input wire:model="title" type="text" id="title"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             @error('chat.title')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
@@ -143,7 +151,7 @@ $updateChatInfo = function () {
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
                                 Deskripsi
                             </label>
-                            <textarea wire:model="chat.description" id="description" rows="3"
+                            <textarea wire:model="description" id="description" rows="3"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                             @error('chat.description')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
