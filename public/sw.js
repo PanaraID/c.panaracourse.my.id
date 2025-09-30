@@ -1,4 +1,4 @@
-const CACHE_NAME = 'panara-course-v1';
+const CACHE_NAME = 'panara-course-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -9,6 +9,10 @@ const urlsToCache = [
   '/apple-touch-icon.png',
   '/favicon-16x16.png',
   '/favicon-32x32.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/icon-maskable-192x192.png',
+  '/icons/icon-maskable-512x512.png',
   // Assets yang akan di-cache saat runtime
 ];
 

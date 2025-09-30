@@ -12,6 +12,9 @@
 <meta name="application-name" content="Panara Course" />
 <meta name="msapplication-TileColor" content="#000000" />
 <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+<meta name="msapplication-navbutton-color" content="#000000" />
+<meta name="msapplication-starturl" content="/" />
+<meta name="format-detection" content="telephone=no" />
 
 <!-- Icons -->
 <link rel="icon" href="/favicon.ico" sizes="any">

@@ -1,4 +1,5 @@
 import './bootstrap';
+import './pwa-install';
 
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
