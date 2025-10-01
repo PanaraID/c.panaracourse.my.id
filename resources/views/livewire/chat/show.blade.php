@@ -7,6 +7,7 @@ use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Validate;
+use Illuminate\Support\Str;
 
 new class extends \Livewire\Volt\Component {
     public ?Chat $chat = null;
@@ -69,10 +70,9 @@ new class extends \Livewire\Volt\Component {
     public function sendMessage()
     {
         $this->newMessage = trim($this->newMessage);
+        $this->newMessage = str_replace(["\r\n", "\n", "\r"], '<br>', $this->newMessage);
 
-        $plainText = strip_tags($this->newMessage);
-
-        if (strlen($plainText) < 1) {
+        if (strlen($this->newMessage) < 1) {
             $this->addError('newMessage', 'Pesan harus terdiri dari minimal 1 karakter.');
             return;
         }
@@ -215,64 +215,145 @@ new class extends \Livewire\Volt\Component {
             </div>
         </div>
     </div>
+    <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-900 transition duration-300"
+        wire:poll.2s="refreshMessages" id="messages-container">
 
-    <!-- Messages Container -->
-    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3 chat-background" wire:poll.2s="refreshMessages"
-        id="messages-container">
         @forelse($this->messages() as $message)
             @php $isOwnMessage = $message->user_id === Auth::id(); @endphp
-            <div class="flex {{ $isOwnMessage ? 'justify-end' : 'justify-start' }} animate-slide-in">
-                <div class="max-w-[75%] group">
-                    <div class="relative">
-                        <div
-                            class="{{ $isOwnMessage
-                                ? 'bg-gradient-to-br from-emerald-400 to-green-500 text-white rounded-tl-2xl rounded-tr-md rounded-bl-2xl rounded-br-2xl shadow-lg shadow-emerald-500/30'
-                                : 'bg-white dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-700 text-gray-900 dark:text-gray-100 rounded-tl-md rounded-tr-2xl rounded-bl-2xl rounded-br-2xl shadow-lg' }} 
-                            px-4 py-3 relative message-bubble transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl">
-                            @if (!$isOwnMessage)
-                                <div
-                                    class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 flex items-center space-x-1">
-                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ $message->user->name }}</span>
-                                </div>
-                            @endif
+
+            {{-- Message Bubble Wrapper --}}
+            <div
+                class="flex {{ $isOwnMessage ? 'justify-end' : 'justify-start' }} mb-4 animate-slide-in-{{ $isOwnMessage ? 'right' : 'left' }}">
+
+                <div class="max-w-[85%] sm:max-w-[70%] group">
+
+                    <div
+                        class="p-3 shadow-xl transform transition-all duration-300
+                            {{-- Own Message Styles --}}
+                            {{ $isOwnMessage
+                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white 
+                                                               rounded-t-xl rounded-bl-xl rounded-br-2xl
+                                                               hover:from-emerald-600 hover:to-green-700 hover:scale-[1.01] shadow-emerald-500/40'
+                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+                                                               rounded-t-xl rounded-tr-2xl rounded-br-xl
+                                                               shadow-gray-300/50 dark:shadow-gray-950/50 hover:scale-[1.01]' }} 
+                            relative">
+
+                        {{-- User Name for Other Messages --}}
+                        @if (!$isOwnMessage)
                             <div
-                                class="text-[15px] whitespace-pre-wrap break-words mb-1 leading-relaxed {{ $isOwnMessage ? 'text-white' : '' }}">
-                                {{ $message->content }}
-                            </div>
-                            <div
-                                class="flex items-center justify-end space-x-1.5 mt-1.5 text-xs {{ $isOwnMessage ? 'text-white/90' : 'text-gray-500 dark:text-gray-400' }}">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1 flex items-center space-x-1">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                        clip-rule="evenodd" />
                                 </svg>
-                                <span class="font-medium">{{ $message->created_at->format('d/m/Y H:i') }}</span>
+                                <span>{{ $message->user->name }}</span>
                             </div>
+                        @endif
+
+                        {{-- Message Content --}}
+                        <div class="">
+                            {!! Str::markdown($message->content) !!}
                         </div>
+
+                        {{-- Timestamp and Status --}}
+                        <div
+                            class="flex items-center justify-end space-x-1.5 mt-1 text-[10px] sm:text-xs 
+                                {{ $isOwnMessage ? 'text-white/80' : 'text-gray-400 dark:text-gray-400' }}">
+                            <span class="font-medium">{{ $message->created_at->format('H:i') }}</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+
                     </div>
                 </div>
             </div>
         @empty
-            <div class="flex flex-col items-center justify-center h-full text-center py-16 animate-fade-in-slow">
+            {{-- Empty State --}}
+            <div class="flex flex-col items-center justify-center h-full text-center py-20 animate-fade-in">
                 <div
-                    class="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-10 shadow-xl">
+                    class="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl max-w-sm w-full transition duration-500">
                     <div
-                        class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center animate-bounce-slow">
+                        class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full 
+                            flex items-center justify-center animate-pulse-slow shadow-lg shadow-emerald-500/30">
                         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-3">Belum ada pesan</h3>
-                    <p class="text-gray-500 dark:text-gray-400 text-lg">Mulai percakapan dengan mengirim pesan pertama!
-                        💬</p>
+                    <h3 class="text-2xl font-extrabold text-gray-800 dark:text-gray-100 mb-3">Mulai Obrolan</h3>
+                    <p class="text-gray-500 dark:text-gray-400 text-base">Kirim pesan pertama Anda dan mulailah
+                        percakapan. 🚀</p>
                 </div>
             </div>
         @endforelse
+
+        {{-- Custom Utility Classes for Animation (Tambahkan ini di bagian CSS Anda) --}}
+        <style>
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+
+                to {
+                    opacity: 1;
+                }
+            }
+
+            @keyframes slideInRight {
+                from {
+                    opacity: 0;
+                    transform: translateX(10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+
+            @keyframes slideInLeft {
+                from {
+                    opacity: 0;
+                    transform: translateX(-10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+
+            @keyframes pulseSlow {
+
+                0%,
+                100% {
+                    opacity: 1;
+                }
+
+                50% {
+                    opacity: 0.8;
+                }
+            }
+
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+
+            .animate-slide-in-right {
+                animation: slideInRight 0.3s ease-out forwards;
+            }
+
+            .animate-slide-in-left {
+                animation: slideInLeft 0.3s ease-out forwards;
+            }
+
+            .animate-pulse-slow {
+                animation: pulseSlow 2.5s infinite ease-in-out;
+            }
+        </style>
     </div>
 
     <!-- Message Input Footer -->
@@ -308,8 +389,6 @@ new class extends \Livewire\Volt\Component {
             </form>
         </div>
     @endcan
-
-
 
     <style>
         /* Enhanced Variables */
