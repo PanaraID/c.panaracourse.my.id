@@ -77,8 +77,8 @@ new class extends \Livewire\Volt\Component {
             return;
         }
 
-        if (strlen($this->newMessage) < 2) {
-            $this->addError('newMessage', 'Pesan harus terdiri dari minimal 2 karakter.');
+        if (strlen($this->newMessage) < 1) {
+            $this->addError('newMessage', 'Pesan harus terdiri dari minimal 1 karakter.');
             return;
         }
         if (strlen($this->newMessage) > 5000) {
