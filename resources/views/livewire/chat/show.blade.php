@@ -212,17 +212,6 @@ new class extends \Livewire\Volt\Component {
                         </svg>
                     </a>
                 @endif
-
-                <!-- Menu Button -->
-                <button
-                    class="text-white hover:bg-white/20 rounded-full p-2.5 transition-all duration-300 hover:scale-110 group">
-                    <svg class="w-5 h-5 group-hover:scale-125 transition-transform" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
-                        </path>
-                    </svg>
-                </button>
             </div>
         </div>
     </div>
@@ -261,16 +250,8 @@ new class extends \Livewire\Volt\Component {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span class="font-medium">{{ $message->created_at->format('H:i') }}</span>
+                                <span class="font-medium">{{ $message->created_at->format('d/m/Y H:i') }}</span>
                             </div>
-                        </div>
-                        <!-- Message Tail -->
-                        <div
-                            class="absolute {{ $isOwnMessage ? 'right-0 -mr-2 tail-right' : 'left-0 -ml-2 tail-left' }} bottom-0">
-                            <svg width="12" height="20" viewBox="0 0 12 20"
-                                class="{{ $isOwnMessage ? 'text-green-500' : 'text-white dark:text-gray-800' }}">
-                                <path d="M0,0 L12,0 L12,20 Q6,15 0,20 Z" fill="currentColor" />
-                            </svg>
                         </div>
                     </div>
                 </div>
