@@ -52,6 +52,11 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 // Show install button
 function showInstallButton() {
+    // Jika pada route chat maka jangan tampilkan tombol install
+    if (window.location.pathname.startsWith('/chat')) {
+        return;
+    }
+
     // Create install button if it doesn't exist
     if (!installButton && document.body) {
         installButton = document.createElement('button');
