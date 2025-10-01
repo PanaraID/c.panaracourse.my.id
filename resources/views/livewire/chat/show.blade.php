@@ -693,21 +693,6 @@ new class extends \Livewire\Volt\Component {
 
         // Handle browser notifications and events
         document.addEventListener('livewire:init', () => {
-            Livewire.on('new-message-sent', (data) => {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`Pesan baru dari ${data.user_name}`, {
-                        body: `${data.message}`,
-                        icon: '/logo.png',
-                        tag: 'new-message-' + Date.now(),
-                        badge: '/logo.png',
-                        requireInteraction: false,
-                        silent: false
-                    });
-                }
-                autoScroll = true;
-                setTimeout(scrollToBottom, 100);
-            });
-
             Livewire.on('new-messages-loaded', () => {
                 setTimeout(scrollToBottom, 100);
             });

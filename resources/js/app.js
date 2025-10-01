@@ -176,3 +176,13 @@ window.addEventListener('offline', () => {
     console.log('✗ Gone offline');
     // Optionally show a notification
 });
+
+
+Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+        console.log('✓ Notification permission granted.');
+        // FIXME
+    } else {
+        alert('⚠️ Izin notifikasi ditolak. Silakan aktifkan notifikasi untuk pengalaman terbaik.');
+    }
+});
