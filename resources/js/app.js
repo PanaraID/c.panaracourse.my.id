@@ -1,40 +1,19 @@
 import './bootstrap';
 import './pwa-install';
 
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
-
-window.Pusher = Pusher;
-
-// Configure Echo for real-time broadcasting
-window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
-    wsHost: import.meta.env.VITE_PUSHER_HOST ? import.meta.env.VITE_PUSHER_HOST : `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusherapp.com`,
-    wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
-    wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-});
-
-// Global message handling for chat
+// Global message handling for chat (without real-time broadcasting)
 window.currentUserId = null;
 
+// Placeholder functions for compatibility (no broadcasting)
 window.handleNewMessage = function(chatId, callback) {
-    if (window.Echo) {
-        window.Echo.private(`chat.${chatId}`)
-            .listen('.message.sent', (e) => {
-                callback(e.message);
-            });
-    }
+    // No broadcasting implementation - messages will be updated via page refresh or manual refresh
+    console.log('Real-time messaging disabled. Please refresh the page to see new messages.');
 };
 
-// Function to leave a chat channel
+// Function to leave a chat channel (placeholder)
 window.leaveChatChannel = function(chatId) {
-    if (window.Echo) {
-        window.Echo.leaveChannel(`private-chat.${chatId}`);
-    }
+    // No broadcasting implementation
+    console.log('Real-time messaging disabled.');
 };
 
 // PWA Service Worker Registration

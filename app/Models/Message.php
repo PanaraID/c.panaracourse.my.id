@@ -28,14 +28,14 @@ class Message extends Model
     protected static function booted(): void
     {
         static::created(function (Message $message) {
-            // Load the user relationship for broadcasting
+            // Load the user relationship for future use
             $message->load('user');
             
             // Create notifications for other members
             \App\Models\Notification::createForNewMessage($message);
             
-            // Broadcast the new message
-            broadcast(new MessageSent($message));
+            // Trigger the MessageSent event (without broadcasting)
+            event(new MessageSent($message));
         });
     }
 

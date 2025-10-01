@@ -202,46 +202,14 @@ mount(function () {
             }
         });
 
-        // Setup real-time notification listening
-        if (window.Echo) {
-            window.Echo.private(`user.${window.currentUserId}`)
-                .listen('.notification.sent', (e) => {
-                    console.log('New notification received:', e.notification);
-                    
-                    // Show browser notification if permission granted
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                        const notification = e.notification;
-                        const data = notification.data || {};
-                        
-                        // Format browser notification based on type
-                        let browserTitle = notification.title;
-                        let browserBody = notification.message;
-                        
-                        if (notification.type === 'new_message' && data.sender_name && data.message_content) {
-                            browserTitle = `Ada pesan dari ${data.sender_name}`;
-                            browserBody = `${data.chat_title ? 'Di ' + data.chat_title + ': ' : ''}${data.message_content}`;
-                        }
-                        
-                        new Notification(browserTitle, {
-                            body: browserBody,
-                            icon: '/logo.png',
-                            tag: 'chat-notification-' + notification.id,
-                            badge: '/logo.png',
-                            requireInteraction: false,
-                            silent: false
-                        });
-                    }
-                    
-                    // Refresh the notifications dropdown
-                    @this.call('refreshNotifications');
-                });
-        }
+        // Note: Real-time notifications disabled. 
+        // Notifications will be updated when the page is refreshed or manually refreshed.
+        console.log('Real-time notifications disabled. Please refresh the page to see new notifications.');
     });
 
-    // Cleanup when leaving the page
+    // Cleanup when leaving the page (placeholder)
     window.addEventListener('beforeunload', () => {
-        if (window.Echo && window.Echo.leave) {
-            window.Echo.leave(`user.${window.currentUserId}`);
-        }
+        // No cleanup needed as broadcasting is disabled
+        console.log('Real-time notifications disabled.');
     });
 </script>

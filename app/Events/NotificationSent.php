@@ -3,17 +3,12 @@
 namespace App\Events;
 
 use App\Models\Notification;
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NotificationSent implements ShouldBroadcast
+class NotificationSent
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
     public Notification $notification;
 
@@ -23,45 +18,5 @@ class NotificationSent implements ShouldBroadcast
     public function __construct(Notification $notification)
     {
         $this->notification = $notification;
-    }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
-    {
-        return [
-            new PrivateChannel('user.' . $this->notification->user_id),
-        ];
-    }
-
-    /**
-     * The event's broadcast name.
-     */
-    public function broadcastAs(): string
-    {
-        return 'notification.sent';
-    }
-
-    /**
-     * Get the data to broadcast.
-     */
-    public function broadcastWith(): array
-    {
-        return [
-            'notification' => [
-                'id' => $this->notification->id,
-                'type' => $this->notification->type,
-                'title' => $this->notification->title,
-                'message' => $this->notification->message,
-                'data' => $this->notification->data,
-                'related_chat_id' => $this->notification->related_chat_id,
-                'related_message_id' => $this->notification->related_message_id,
-                'created_at' => $this->notification->created_at->toISOString(),
-                'is_read' => $this->notification->isRead(),
-            ],
-        ];
     }
 }

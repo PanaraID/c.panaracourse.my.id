@@ -27,8 +27,8 @@ class Notification extends Model
     protected static function booted(): void
     {
         static::created(function (Notification $notification) {
-            // Broadcast the new notification
-            broadcast(new NotificationSent($notification));
+            // Trigger the NotificationSent event (without broadcasting)
+            event(new NotificationSent($notification));
         });
     }
 
