@@ -69,11 +69,16 @@ new class extends \Livewire\Volt\Component {
 
     public function sendMessage()
     {
+        // FIXME tambahkan flasher
         $this->newMessage = trim($this->newMessage);
         $this->newMessage = str_replace(["\r\n", "\n", "\r"], '<br>', $this->newMessage);
+        if (preg_match('/(\+62|62|0)?[ -]?\d{2,4}[ -]?\d{2,4}[ -]?\d{2,5}/', $this->newMessage)) {
+            $this->addError('newMessage', 'Pesan tidak boleh mengandung nomor telepon.');
+            return;
+        }
 
-        if (strlen($this->newMessage) < 1) {
-            $this->addError('newMessage', 'Pesan harus terdiri dari minimal 1 karakter.');
+        if (strlen($this->newMessage) < 2) {
+            $this->addError('newMessage', 'Pesan harus terdiri dari minimal 2 karakter.');
             return;
         }
         if (strlen($this->newMessage) > 5000) {
@@ -232,11 +237,11 @@ new class extends \Livewire\Volt\Component {
                             {{-- Own Message Styles --}}
                             {{ $isOwnMessage
                                 ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white 
-                                                               rounded-t-xl rounded-bl-xl rounded-br-2xl
-                                                               hover:from-emerald-600 hover:to-green-700 hover:scale-[1.01] shadow-emerald-500/40'
+                                                                                           rounded-t-xl rounded-bl-xl rounded-br-2xl
+                                                                                           hover:from-emerald-600 hover:to-green-700 hover:scale-[1.01] shadow-emerald-500/40'
                                 : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 
-                                                               rounded-t-xl rounded-tr-2xl rounded-br-xl
-                                                               shadow-gray-300/50 dark:shadow-gray-950/50 hover:scale-[1.01]' }} 
+                                                                                           rounded-t-xl rounded-tr-2xl rounded-br-xl
+                                                                                           shadow-gray-300/50 dark:shadow-gray-950/50 hover:scale-[1.01]' }} 
                             relative">
 
                         {{-- User Name for Other Messages --}}
@@ -364,7 +369,8 @@ new class extends \Livewire\Volt\Component {
                 <!-- Message Input -->
                 <div class="flex-1 relative" wire:ignore>
                     <div id="message-input" contenteditable="true" data-placeholder="Ketik pesan..."
-                        class="w-full max-h-32 overflow-y-auto px-5 py-3.5 bg-gray-50 dark:bg-gray-700 rounded-3xl focus:outline-none text-gray-900 dark:text-gray-100 text-[15px] shadow-inner border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500 transition-all duration-300"
+                        class="w-full max-h-32 overflow-y-auto px-5 py-3.5 bg-gray-50 dark:bg-gray-700 rounded-3xl focus:outline-none text-gray-900 dark:text-gray-100 text-[15px] shadow-inner border-2 transition-all duration-300
+                        @error('newMessage') border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-900/10 @else border-transparent focus:border-emerald-400 dark:focus:border-emerald-500 @enderror"
                         style="min-height: 48px; line-height: 1.5;"></div>
                     <input type="hidden" wire:model="newMessage" id="hidden-message">
                 </div>
