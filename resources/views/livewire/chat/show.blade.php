@@ -19,7 +19,7 @@ new class extends \Livewire\Volt\Component {
             return collect();
         }
 
-        $messages = $this->chat->messages()->with('user')->latest()->take(50)->get()->values();
+        $messages = $this->chat->messages()->with('user')->latest()->get()->values();
 
         // Update last message ID to track new messages
         if ($messages->isNotEmpty()) {
@@ -199,7 +199,7 @@ new class extends \Livewire\Volt\Component {
 
         <!-- Messages Container -->
         <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4" wire:poll.3s="refreshMessages">
-            @forelse($this->messages() as $message)
+            @forelse($this->messages()->reverse() as $message)
                 <div class="flex {{ $message->user_id === Auth::id() ? 'justify-end' : 'justify-start' }}">
                     <div class="max-w-xs lg:max-w-md">
                         <div
