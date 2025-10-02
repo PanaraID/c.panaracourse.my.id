@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Logout;
 use App\Listeners\LogUserLogout;
+use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,5 +26,6 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register logout event listener
         Event::listen(Logout::class, LogUserLogout::class);
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
 }
