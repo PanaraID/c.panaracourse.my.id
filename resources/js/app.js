@@ -177,11 +177,40 @@ window.addEventListener('offline', () => {
     // Optionally show a notification
 });
 
-
 Notification.requestPermission().then(permission => {
     if (permission === 'granted') {
         console.log('✓ Notification permission granted.');
-        // FIXME
+
+        function showNotification() {
+            fetch('/api/notifications', {
+                headers: {
+                    'Accept': 'application/json',
+                    "Content-Type": "application/json",
+                    'Authorization': 'Bearer ' + '2f1eecdc6eefcd560d6cb8b7297d7015484fee7dd30fb6829d1c80c629430a6c'
+                }
+            })
+            .then(response => {
+                console.log('✓ Fetching notifications from API');
+                console.log('User token:', localStorage.getItem('user_token'));
+                console.log('Response URL:', response.url);
+                console.log('Response type:', response.type);
+                console.log('Headers:', [...response.headers]);
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                console.log('Response body:', response.body);
+                console.log('Response ok:', response.ok);
+                console.log('Response ' + response.type);
+                return response.json(); // Parse the response as JSON
+            })
+            .then(data => {
+                console.log('✓ Fetched notifications:', data);
+            })
+            .catch(error => {
+                console.error('✗ Failed to fetch notifications:', error);
+            });
+        }
+
+        showNotification();
     } else {
         alert('⚠️ Izin notifikasi ditolak. Silakan aktifkan notifikasi untuk pengalaman terbaik.');
     }

@@ -50,6 +50,20 @@ new #[Layout('components.layouts.auth')] class extends Component {
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
+        // Create token with expiration
+        $tokenName = 'user_token_' . now()->timestamp;
+        $token = $user->createToken($tokenName, ['*'], now()->addDays(30))->plainTextToken;
+        
+        // Log token creation WITHOUT the actual token for security
+        logger()->info('User token created', [
+            'user_id' => $user->id, 
+            'token_name' => $tokenName,
+            'expires_at' => now()->addDays(30)->toDateTimeString()
+        ]);
+        if (app()->environment('local')) {
+            logger()->debug('User token (development only)', ['token' => $token]);
+        }
+        
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 
