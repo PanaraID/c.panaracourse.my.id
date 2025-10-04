@@ -61,6 +61,22 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Skip authentication pages and forms (NEVER cache these)
+  if (url.pathname.includes('/login') ||
+      url.pathname.includes('/register') ||
+      url.pathname.includes('/password') ||
+      url.pathname.includes('/auth') ||
+      url.pathname.includes('/two-factor') ||
+      url.pathname.includes('/logout') ||
+      url.pathname.includes('/verify-email') ||
+      url.searchParams.has('_token') ||
+      event.request.headers.get('X-CSRF-TOKEN') ||
+      event.request.headers.get('X-Livewire')) {
+    // Always go to network for auth-related requests
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // Network First strategy untuk API dan halaman dinamis
   if (url.pathname.startsWith('/api/') || 
       url.pathname.includes('livewire') ||
