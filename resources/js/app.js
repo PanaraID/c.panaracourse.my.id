@@ -5,13 +5,13 @@ import './pwa-install';
 window.currentUserId = null;
 
 // Placeholder functions for compatibility (no broadcasting)
-window.handleNewMessage = function(chatId, callback) {
+window.handleNewMessage = function (chatId, callback) {
     // No broadcasting implementation - messages will be updated via page refresh or manual refresh
     console.log('Real-time messaging disabled. Please refresh the page to see new messages.');
 };
 
 // Function to leave a chat channel (placeholder)
-window.leaveChatChannel = function(chatId) {
+window.leaveChatChannel = function (chatId) {
     // No broadcasting implementation
     console.log('Real-time messaging disabled.');
 };
@@ -22,7 +22,7 @@ if ('serviceWorker' in navigator) {
         try {
             const registration = await navigator.serviceWorker.register('/sw.js');
             console.log('✓ Service Worker registered successfully:', registration.scope);
-            
+
             // Check for updates
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
@@ -90,10 +90,10 @@ function showInstallButton() {
             transform: translateY(100px);
             opacity: 0;
         `;
-        
+
         installButton.addEventListener('click', installPWA);
         document.body.appendChild(installButton);
-        
+
         // Animate in
         setTimeout(() => {
             installButton.style.transform = 'translateY(0)';
@@ -105,15 +105,15 @@ function showInstallButton() {
 // Install PWA function
 async function installPWA() {
     if (!deferredPrompt) return;
-    
+
     try {
         const result = await deferredPrompt.prompt();
         console.log('✓ PWA install prompt result:', result.outcome);
-        
+
         if (result.outcome === 'accepted') {
             hideInstallButton();
         }
-        
+
         deferredPrompt = null;
     } catch (error) {
         console.log('✗ PWA install error:', error);
@@ -155,15 +155,15 @@ function showUpdateAvailable() {
             </button>
         </div>
     `;
-    
+
     document.body.appendChild(updateNotification);
-    
-    // Auto hide after 10 seconds
+
+    // Auto hide after 3 seconds
     setTimeout(() => {
         if (updateNotification.parentNode) {
             updateNotification.parentNode.removeChild(updateNotification);
         }
-    }, 10000);
+    }, 3000);
 }
 
 // Online/Offline status
@@ -213,28 +213,11 @@ Notification.requestPermission().then(permission => {
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            console.log('✓ Notifications:', data);
-
-
-
-            Notification.requestPermission().then(permission => {
-                if (permission !== 'granted') return;
-                data.notifications.forEach(notif => {
-                    const notification = new Notification('Notifikasi Baru', {
-                        body: notif.data.message || 'Anda memiliki notifikasi baru.',
-                        icon: '/icons/icon-192x192.png',
-                        badge: '/icons/icon-192x192.png',
-                        tag: 'notif-' + notif.id
-                    });
-                    notification.onclick = () => {
-                        window.focus();
-                        if (notif.data.url) {
-                            window.location.href = notif.data.url;
-                        }
-                        notification.close();
-                    };
-                });
-            });
+            console.log('✓ Notification:', data);
+            const notif = data.notification;
+            if (notif) {
+                console.log('✓ Notification shown:', notif);
+            }
         } catch (err) {
             console.error('✗ Notification fetch error:', err);
             if (err.message.includes('401')) localStorage.removeItem('user_token');

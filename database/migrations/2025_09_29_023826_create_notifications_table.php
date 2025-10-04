@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignId('related_chat_id')->nullable()->constrained('chats')->onDelete('cascade');
             $table->foreignId('related_message_id')->nullable()->constrained('messages')->onDelete('cascade');
             $table->timestamp('read_at')->nullable();
+            $table->timestamp('pushed_at')->nullable();
             $table->timestamps();
             
             $table->index(['user_id', 'read_at']);
