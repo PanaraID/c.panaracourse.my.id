@@ -8,16 +8,7 @@ use App\Events\NotificationSent;
 
 class Notification extends Model
 {
-    protected $fillable = [
-        'user_id',
-        'type',
-        'title',
-        'message',
-        'data',
-        'related_chat_id',
-        'related_message_id',
-        'read_at'
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'data' => 'array',
