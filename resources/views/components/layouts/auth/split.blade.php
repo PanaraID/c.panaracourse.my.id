@@ -39,5 +39,13 @@
             </div>
         </div>
         @fluxScripts
+        
+        @if(session('clear_token'))
+        <script>
+            // Clear user token from localStorage after logout
+            localStorage.removeItem('user_token');
+            console.log('✓ User token cleared from localStorage');
+        </script>
+        @endif
     </body>
 </html>

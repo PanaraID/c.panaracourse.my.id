@@ -178,40 +178,68 @@ window.addEventListener('offline', () => {
 });
 
 Notification.requestPermission().then(permission => {
-    if (permission === 'granted') {
-        console.log('✓ Notification permission granted.');
-
-        function showNotification() {
-            fetch('/api/notifications', {
-                headers: {
-                    'Accept': 'application/json',
-                    "Content-Type": "application/json",
-                    'Authorization': 'Bearer ' + '2f1eecdc6eefcd560d6cb8b7297d7015484fee7dd30fb6829d1c80c629430a6c'
-                }
-            })
-            .then(response => {
-                console.log('✓ Fetching notifications from API');
-                console.log('User token:', localStorage.getItem('user_token'));
-                console.log('Response URL:', response.url);
-                console.log('Response type:', response.type);
-                console.log('Headers:', [...response.headers]);
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
-                console.log('Response body:', response.body);
-                console.log('Response ok:', response.ok);
-                console.log('Response ' + response.type);
-                return response.json(); // Parse the response as JSON
-            })
-            .then(data => {
-                console.log('✓ Fetched notifications:', data);
-            })
-            .catch(error => {
-                console.error('✗ Failed to fetch notifications:', error);
-            });
-        }
-
-        showNotification();
-    } else {
+    if (permission !== 'granted') {
         alert('⚠️ Izin notifikasi ditolak. Silakan aktifkan notifikasi untuk pengalaman terbaik.');
+        return;
     }
+    console.log('✓ Notification permission granted.');
+
+    async function getToken() {
+        let token = localStorage.getItem('user_token');
+        if (!token) {
+            try {
+                const res = await fetch('/api/user/token', {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error('Failed to get token');
+                const data = await res.json();
+                token = data.token;
+                localStorage.setItem('user_token', token);
+            } catch (err) {
+                console.error('✗ Token fetch error:', err);
+                return null;
+            }
+        }
+        return token;
+    }
+
+    async function fetchNotifications() {
+        const token = await getToken();
+        if (!token) return;
+        try {
+            const res = await fetch('/api/notifications', {
+                headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            console.log('✓ Notifications:', data);
+
+
+
+            Notification.requestPermission().then(permission => {
+                if (permission !== 'granted') return;
+                data.notifications.forEach(notif => {
+                    const notification = new Notification('Notifikasi Baru', {
+                        body: notif.data.message || 'Anda memiliki notifikasi baru.',
+                        icon: '/icons/icon-192x192.png',
+                        badge: '/icons/icon-192x192.png',
+                        tag: 'notif-' + notif.id
+                    });
+                    notification.onclick = () => {
+                        window.focus();
+                        if (notif.data.url) {
+                            window.location.href = notif.data.url;
+                        }
+                        notification.close();
+                    };
+                });
+            });
+        } catch (err) {
+            console.error('✗ Notification fetch error:', err);
+            if (err.message.includes('401')) localStorage.removeItem('user_token');
+        }
+    }
+
+    setInterval(fetchNotifications, 3000);
 });

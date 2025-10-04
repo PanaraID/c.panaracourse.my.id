@@ -123,5 +123,21 @@
         {{ $slot }}
 
         @fluxScripts
+        
+        <!-- Token Management Script -->
+        @auth
+        <script>
+            // Check if we have a token in session to store in localStorage
+            @if(session('user_token_for_js'))
+                localStorage.setItem('user_token', '{{ session('user_token_for_js') }}');
+                console.log('✓ User token stored in localStorage');
+                // Clear the session after storing
+                @php session()->forget('user_token_for_js'); @endphp
+            @endif
+            
+            // Set current user ID for global access
+            window.currentUserId = {{ auth()->id() }};
+        </script>
+        @endauth
     </body>
 </html>
