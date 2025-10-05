@@ -613,6 +613,66 @@ new class extends \Livewire\Volt\Component {
         let autoScroll = true;
         let messageInput;
 
+        // Safe Livewire call helper
+        function safeLivewireCall(method, ...args) {
+            if (window.Livewire && @this && typeof @this[method] === 'function') {
+                try {
+                    return @this[method](...args);
+                } catch (error) {
+                    console.error('Livewire call error:', error);
+                    if (window.logger) {
+                        window.logger.error('Livewire call failed', {
+                            method,
+                            args,
+                            error: error.message,
+                            component: 'chat-show'
+                        });
+                    }
+                }
+            } else {
+                console.warn('Livewire not ready for method:', method);
+                if (window.logger) {
+                    window.logger.warn('Livewire not ready', {
+                        method,
+                        livewireExists: !!window.Livewire,
+                        thisExists: !!@this,
+                        component: 'chat-show'
+                    });
+                }
+                return null;
+            }
+        }
+
+        // Safe Livewire set helper
+        function safeLivewireSet(property, value) {
+            if (window.Livewire && @this && typeof @this.set === 'function') {
+                try {
+                    return @this.set(property, value);
+                } catch (error) {
+                    console.error('Livewire set error:', error);
+                    if (window.logger) {
+                        window.logger.error('Livewire set failed', {
+                            property,
+                            value,
+                            error: error.message,
+                            component: 'chat-show'
+                        });
+                    }
+                }
+            } else {
+                console.warn('Livewire not ready for set:', property);
+                if (window.logger) {
+                    window.logger.warn('Livewire not ready for set', {
+                        property,
+                        livewireExists: !!window.Livewire,
+                        thisExists: !!@this,
+                        component: 'chat-show'
+                    });
+                }
+                return null;
+            }
+        }
+
         function scrollToBottom() {
             const container = document.getElementById('messages-container');
             if (container && autoScroll) {
@@ -624,14 +684,14 @@ new class extends \Livewire\Volt\Component {
         }
 
         function markNotificationsAsRead() {
-            @this.call('markNotificationsRead');
+            safeLivewireCall('call', 'markNotificationsRead');
         }
 
         function updateHiddenInput() {
             if (messageInput) {
                 const text = messageInput.innerText.trim();
                 document.getElementById('hidden-message').value = text;
-                @this.set('newMessage', text);
+                safeLivewireSet('newMessage', text);
             }
         }
 

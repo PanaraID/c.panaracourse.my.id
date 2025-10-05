@@ -39,6 +39,52 @@ mount(function () {
         window.currentUserId = window.currentUserId || {{ Auth::id() }};
         let hasRequestedPermission = false;
 
+        // Safe Livewire call helper
+        function safeLivewireCall(method, ...args) {
+            if (window.Livewire && @this && typeof @this[method] === 'function') {
+                try {
+                    return @this[method](...args);
+                } catch (error) {
+                    console.error('Livewire call error:', error);
+                    if (window.logger) {
+                        window.logger.error('Livewire call failed', {
+                            method,
+                            args,
+                            error: error.message,
+                            component: 'notification-manager'
+                        });
+                    }
+                }
+            } else {
+                console.warn('Livewire not ready for method:', method);
+                if (window.logger) {
+                    window.logger.warn('Livewire not ready', {
+                        method,
+                        livewireExists: !!window.Livewire,
+                        thisExists: !!@this,
+                        component: 'notification-manager'
+                    });
+                }
+                return null;
+            }
+        }
+
+        // Wait for Livewire to be fully initialized
+        function waitForLivewire(callback, timeout = 5000) {
+            const startTime = Date.now();
+            const checkInterval = setInterval(() => {
+                if (window.Livewire && @this && typeof @this.call === 'function') {
+                    clearInterval(checkInterval);
+                    callback();
+                } else if (Date.now() - startTime > timeout) {
+                    clearInterval(checkInterval);
+                    console.warn('Livewire initialization timeout');
+                }
+            }, 100);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+
         // Request notification permission and show initial notifications
         document.addEventListener('livewire:init', () => {
             // Request permission first
@@ -46,28 +92,29 @@ mount(function () {
                 Notification.requestPermission().then(function (permission) {
                     if (permission === 'granted') {
                         // Show initial notifications after permission granted
-                        setTimeout(() => {
-                            @this.call('showInitialNotifications');
-                        }, 1000);
+                        waitForLivewire(() => {
+                            safeLivewireCall('call', 'showInitialNotifications');
+                        });
                     }
                 });
             } else if (Notification.permission === 'granted') {
                 // Already have permission, show notifications
-                setTimeout(() => {
-                    @this.call('showInitialNotifications');
-                }, 1000);
+                waitForLivewire(() => {
+                    safeLivewireCall('call', 'showInitialNotifications');
+                });
             }
 
             // Listen for event to show initial notifications
-            Livewire.on('show-initial-notifications-delayed', () => {
-                setTimeout(() => {
-                    @this.call('showInitialNotifications');
-                }, 2000);
-            });
+            document.addEventListener('livewire:initialized', () => {
+                Livewire.on('show-initial-notifications-delayed', () => {
+                    setTimeout(() => {
+                        safeLivewireCall('call', 'showInitialNotifications');
+                    }, 2000);
+                });
 
-            // Listen for unread notifications to display
-            Livewire.on('show-unread-notifications', (data) => {
-                if ('Notification' in window && Notification.permission === 'granted') {
+                // Listen for unread notifications to display
+                Livewire.on('show-unread-notifications', (data) => {
+                    if ('Notification' in window && Notification.permission === 'granted') {
                     const notifications = data.notifications || [];
                     
                     notifications.forEach((notification, index) => {
@@ -94,6 +141,7 @@ mount(function () {
                         }, index * 1000); // Stagger notifications by 1 second each
                     });
                 }
+            });
             });
         });
     </script>
