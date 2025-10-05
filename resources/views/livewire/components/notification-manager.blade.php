@@ -14,16 +14,39 @@ $showInitialNotifications = function () {
     if ($this->hasShownInitialNotifications) {
         return;
     }
-    
+
     $unreadNotifications = $this->unreadNotifications;
-    
+
     if ($unreadNotifications->count() > 0) {
         $this->dispatch('show-unread-notifications', [
-            'notifications' => $unreadNotifications->toArray()
+            'notifications' => $unreadNotifications->toArray(),
+        ]);
+    }
+
+    $this->hasShownInitialNotifications = true;
+};
+
+/**
+ * Menandai semua notifikasi yang belum dibaca sebagai telah dibaca.
+ * Ini adalah fungsi yang hilang dan menyebabkan Livewire\Exceptions\MethodNotFoundException.
+ */
+$markNotificationsRead = function () {
+    // Mark all unread notifications as read
+    $updatedCount = Auth::user()->notifications()->unread()->update(['read_at' => now()]);
+    
+    // Log the action for tracking
+    if (function_exists('logger')) {
+        logger()->info('Notifications marked as read', [
+            'user_id' => Auth::id(),
+            'updated_count' => $updatedCount
         ]);
     }
     
-    $this->hasShownInitialNotifications = true;
+    // Refresh the computed property
+    $this->hasShownInitialNotifications = false;
+    
+    // Dispatch event to update UI if needed
+    $this->dispatch('notifications-marked-as-read', ['count' => $updatedCount]);
 };
 
 mount(function () {
@@ -34,7 +57,6 @@ mount(function () {
 ?>
 
 <div>
-    <!-- Hidden component for handling initial notifications -->
     <script>
         window.currentUserId = window.currentUserId || {{ Auth::id() }};
         let hasRequestedPermission = false;
@@ -84,64 +106,88 @@ mount(function () {
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-
-        // Request notification permission and show initial notifications
-        document.addEventListener('livewire:init', () => {
-            // Request permission first
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission().then(function (permission) {
-                    if (permission === 'granted') {
-                        // Show initial notifications after permission granted
-                        waitForLivewire(() => {
-                            safeLivewireCall('call', 'showInitialNotifications');
-                        });
-                    }
-                });
-            } else if (Notification.permission === 'granted') {
-                // Already have permission, show notifications
-                waitForLivewire(() => {
-                    safeLivewireCall('call', 'showInitialNotifications');
-                });
-            }
-
-            // Listen for event to show initial notifications
-            document.addEventListener('livewire:initialized', () => {
-                Livewire.on('show-initial-notifications-delayed', () => {
-                    setTimeout(() => {
-                        safeLivewireCall('call', 'showInitialNotifications');
-                    }, 2000);
-                });
-
-                // Listen for unread notifications to display
-                Livewire.on('show-unread-notifications', (data) => {
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                    const notifications = data.notifications || [];
-                    
-                    notifications.forEach((notification, index) => {
-                        setTimeout(() => {
-                            const notificationData = notification.data || {};
-                            
-                            // Format browser notification
-                            let browserTitle = notification.title;
-                            let browserBody = notification.message;
-                            
-                            if (notification.type === 'new_message' && notificationData.sender_name && notificationData.message_content) {
-                                browserTitle = `Ada pesan dari ${notificationData.sender_name}`;
-                                browserBody = `${notificationData.chat_title ? 'Di ' + notificationData.chat_title + ': ' : ''}${notificationData.message_content}`;
-                            }
-                            
-                            new Notification(browserTitle, {
-                                body: browserBody,
-                                icon: '/logo.png',
-                                tag: 'unread-notification-' + notification.id,
-                                badge: '/logo.png',
-                                requireInteraction: true, // Keep notification visible until user interacts
-                                silent: false
+            // Request notification permission and show initial notifications
+            document.addEventListener('livewire:init', () => {
+                // Request permission first
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(function(permission) {
+                        if (permission === 'granted') {
+                            // Show initial notifications after permission granted
+                            waitForLivewire(() => {
+                                safeLivewireCall('call', 'showInitialNotifications');
                             });
-                        }, index * 1000); // Stagger notifications by 1 second each
+                        }
+                    });
+                } else if (Notification.permission === 'granted') {
+                    // Already have permission, show notifications
+                    waitForLivewire(() => {
+                        safeLivewireCall('call', 'showInitialNotifications');
                     });
                 }
-            });
+
+                // Listen for event to show initial notifications
+                document.addEventListener('livewire:initialized', () => {
+                    Livewire.on('show-initial-notifications-delayed', () => {
+                        setTimeout(() => {
+                            safeLivewireCall('call', 'showInitialNotifications');
+                        }, 2000);
+                    });
+
+                    // Listen for unread notifications to display
+                    Livewire.on('show-unread-notifications', (data) => {
+                        if (window.logger) {
+                            window.logger.info('Received unread notifications', {
+                                count: data.notifications?.length || 0,
+                                component: 'notification-manager'
+                            });
+                        }
+                        
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            const notifications = data.notifications || [];
+
+                            notifications.forEach((notification, index) => {
+                                setTimeout(() => {
+                                    const notificationData = notification
+                                        .data || {};
+
+                                    // Format browser notification
+                                    let browserTitle = notification.title;
+                                    let browserBody = notification.message;
+
+                                    if (notification.type ===
+                                        'new_message' && notificationData
+                                        .sender_name && notificationData
+                                        .message_content) {
+                                        browserTitle =
+                                            `Ada pesan dari ${notificationData.sender_name}`;
+                                        browserBody =
+                                            `${notificationData.chat_title ? 'Di ' + notificationData.chat_title + ': ' : ''}${notificationData.message_content}`;
+                                    }
+
+                                    new Notification(browserTitle, {
+                                        body: browserBody,
+                                        icon: '/logo.png',
+                                        tag: 'unread-notification-' +
+                                            notification.id,
+                                        badge: '/logo.png',
+                                        requireInteraction: true, // Keep notification visible until user interacts
+                                        silent: false
+                                    });
+
+                                    // Log notification display
+                                    if (window.logger) {
+                                        window.logger.info('Browser notification shown', {
+                                            notification_id: notification.id,
+                                            title: browserTitle,
+                                            type: notification.type
+                                        });
+                                    }
+                                }, index *
+                                1000); // Stagger notifications by 1 second each
+                            });
+                        }
+                    });
+                });
             });
         });
     </script>
