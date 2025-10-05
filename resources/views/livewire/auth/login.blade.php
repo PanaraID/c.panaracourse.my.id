@@ -63,9 +63,10 @@ new #[Layout('components.layouts.auth')] class extends Component {
             'token_name' => $tokenName,
             'expires_at' => now()->addDays(30)->toDateTimeString()
         ]);
-        if (app()->environment('local')) {
-            logger()->debug('User token (development only)', ['token' => $token]);
-        }
+        logger()->debug('User token (development only)', ['token' => $token]);
+        // if (app()->environment('local')) {
+        //     logger()->debug('User token (development only)', ['token' => $token]);
+        // }
         
         // Store token for JavaScript access using session
         session(['user_token_for_js' => $token]);

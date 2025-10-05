@@ -213,10 +213,14 @@ Notification.requestPermission().then(permission => {
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            console.log('✓ Notification:', data);
             const notif = data.notification;
             if (notif) {
                 console.log('✓ Notification shown:', notif);
+                new Notification('Hai, kamu punya notifikasi baru!', {
+                    body: notif.message,
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico',
+                })
             }
         } catch (err) {
             console.error('✗ Notification fetch error:', err);

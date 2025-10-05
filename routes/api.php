@@ -31,8 +31,12 @@ Route::middleware(['auth:web'])->get('/user/token', function (Request $request) 
 
 // Mengambil data notifikasi untuk user yang terautentikasi pada chat yang ia ikuti
 Route::middleware(['auth:sanctum'])->get('/notifications', function (Request $request) {
+    logger()->info('Fetching notifications for user ID ' . $request->user()->id);
+
     // Ambil notifikasi terbaru yang belum dibaca dan belum dipush
-    $notification = $request->user()->notifications()->whereNull(['read_at', 'pushed_at'])->first();
+    $notification = $request->user()->notifications()->where(['pushed_at' => null])->first();
+    logger()->info('Fetched notification: ' . ($notification ? $notification->id : 'none'));
+    
     if ($notification) {
         $notification->pushed_at = now();
         $notification->save();
