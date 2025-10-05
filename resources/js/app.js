@@ -1,5 +1,12 @@
 import './bootstrap';
 import './pwa-install';
+import './logger';
+import './debug-console';
+
+// Import testing in development
+if (import.meta.env.DEV) {
+    import('./logging-tests');
+}
 
 // Global message handling for chat (without real-time broadcasting)
 window.currentUserId = null;

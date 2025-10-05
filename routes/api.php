@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\FrontendLogController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'API is working']);
@@ -45,4 +46,12 @@ Route::middleware(['auth:sanctum'])->get('/notifications', function (Request $re
         'notification' => $notification,
         'user' => $request->user()->only(['id', 'name', 'email'])
     ]);
+});
+
+// Frontend Logging API Routes
+Route::post('/frontend-logs', [FrontendLogController::class, 'store'])->name('frontend-logs.store');
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/frontend-logs', [FrontendLogController::class, 'index'])->name('frontend-logs.index');
+    Route::get('/frontend-logs/stats', [FrontendLogController::class, 'stats'])->name('frontend-logs.stats');
+    Route::delete('/frontend-logs/cleanup', [FrontendLogController::class, 'cleanup'])->name('frontend-logs.cleanup');
 });

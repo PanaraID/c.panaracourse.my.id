@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\Admin\LogDashboardController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -53,6 +54,16 @@ Route::middleware(['auth'])->group(function () {
 
     // Notifications (accessible by all authenticated users)
     Volt::route('/notifications', 'notifications.index')->name('notifications.index');
+    
+    // Frontend Logs Admin Dashboard (add appropriate middleware for admin access)
+    Route::prefix('admin/logs')->name('admin.logs.')->group(function () {
+        Route::get('/', [LogDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/logs', [LogDashboardController::class, 'logs'])->name('logs');
+        Route::get('/logs/{log}', [LogDashboardController::class, 'show'])->name('show');
+        Route::get('/errors', [LogDashboardController::class, 'errors'])->name('errors');
+        Route::get('/performance', [LogDashboardController::class, 'performance'])->name('performance');
+        Route::get('/export', [LogDashboardController::class, 'export'])->name('export');
+    });
 });
 
 require __DIR__.'/auth.php';
