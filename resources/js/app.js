@@ -184,7 +184,10 @@ async function fetchNotifications() {
 
 async function setupNotifications() {
     if (await requestNotificationPermission()) {
-        setInterval(fetchNotifications, 3000);
+        setInterval(function() {
+            console.log('[Notification] Checking for new notifications...');
+            fetchNotifications();
+        }, 3000);
     }
 }
 
