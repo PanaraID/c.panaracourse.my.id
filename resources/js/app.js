@@ -11,18 +11,19 @@ function registerServiceWorker() {
     window.addEventListener('load', async () => {
         try {
             const registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('✓ Service Worker registered:', registration.scope);
+            console.log('[PWA] Service Worker registered:', registration.scope);
 
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('[PWA] Update available');
                         showUpdateAvailable();
                     }
                 });
             });
         } catch (error) {
-            console.error('✗ Service Worker registration failed:', error);
+            console.error('[PWA] Service Worker registration failed:', error.message);
         }
     });
 }
@@ -35,11 +36,12 @@ function setupInstallPrompt() {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
+        console.log('[PWA] Install prompt available');
         showInstallButton();
     });
 
     window.addEventListener('appinstalled', () => {
-        console.log('✓ PWA was installed');
+        console.log('[PWA] App installed');
         hideInstallButton();
     });
 }
@@ -77,10 +79,15 @@ async function installPWA() {
     if (!deferredPrompt) return;
     try {
         const result = await deferredPrompt.prompt();
-        if (result.outcome === 'accepted') hideInstallButton();
+        if (result.outcome === 'accepted') {
+            console.log('[PWA] User accepted install');
+            hideInstallButton();
+        } else {
+            console.log('[PWA] User dismissed install');
+        }
         deferredPrompt = null;
     } catch (error) {
-        console.error('✗ PWA install error:', error);
+        console.error('[PWA] Install error:', error.message);
     }
 }
 
@@ -106,16 +113,22 @@ function showUpdateAvailable() {
     `;
     document.body.appendChild(updateNotification);
 
-    updateNotification.querySelector('#update-now-btn').onclick = () => window.location.reload();
-    updateNotification.querySelector('#update-later-btn').onclick = () => updateNotification.remove();
+    updateNotification.querySelector('#update-now-btn').onclick = () => {
+        console.log('[PWA] User chose to update now');
+        window.location.reload();
+    };
+    updateNotification.querySelector('#update-later-btn').onclick = () => {
+        console.log('[PWA] User postponed update');
+        updateNotification.remove();
+    };
 
     setTimeout(() => updateNotification.remove(), 3000);
 }
 
 // --- Online/Offline Status ---
 function setupOnlineOfflineListeners() {
-    window.addEventListener('online', () => console.log('✓ Back online'));
-    window.addEventListener('offline', () => console.log('✗ Gone offline'));
+    window.addEventListener('online', () => console.log('[Network] Online'));
+    window.addEventListener('offline', () => console.log('[Network] Offline'));
 }
 
 // --- Notification Handling ---
@@ -124,31 +137,29 @@ async function requestNotificationPermission() {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             alert('⚠️ Izin notifikasi ditolak. Silakan aktifkan notifikasi untuk pengalaman terbaik.');
+            console.warn('[Notification] Permission denied');
             return false;
         }
-        console.log('✓ Notification permission granted.');
+        console.log('[Notification] Permission granted');
         return true;
     } catch (error) {
-        console.error('✗ Notification permission error:', error);
+        console.error('[Notification] Permission error:', error.message);
         return false;
     }
 }
 
 function getToken() {
-    let token = document.body.dataset;
-    console.log('Body dataset:', token);
-    token = token.userId || null;
-    console.log('Extracted token:', token);
-    if (!token) {
+    const { userId } = document.body.dataset || {};
+    if (!userId) {
         alert('⚠️ Ada kesalahan fatal. Silakan login ulang.');
+        console.error('[Auth] User token missing');
         return null;
     }
-    return token;
+    return userId;
 }
 
 async function fetchNotifications() {
     const token = getToken();
-    console.log('Using token:', token);
     if (!token) return;
     try {
         const res = await fetch('/api/notifications', {
@@ -163,9 +174,10 @@ async function fetchNotifications() {
                 icon: '/favicon.ico',
                 badge: '/favicon.ico',
             });
+            console.log('[Notification] New notification received');
         }
     } catch (err) {
-        console.error('✗ Notification fetch error:', err);
+        console.error('[Notification] Fetch error:', err.message);
         if (err.message.includes('401')) localStorage.removeItem('user_token');
     }
 }
