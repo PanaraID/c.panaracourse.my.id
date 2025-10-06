@@ -186,7 +186,9 @@ async function setupNotifications() {
     if (await requestNotificationPermission()) {
         setInterval(function() {
             console.log('[Notification] Checking for new notifications...');
-            fetchNotifications();
+            if (window.location.pathname !== '/login') {
+                fetchNotifications();
+            }
         }, 3000);
     }
 }
