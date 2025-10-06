@@ -135,10 +135,11 @@ async function requestNotificationPermission() {
 }
 
 function getToken() {
-    let token = localStorage.getItem('user_token');
+    let token = document.body.dataset;
+    console.log('Body dataset:', token);
+    token = token.userId || null;
+    console.log('Extracted token:', token);
     if (!token) {
-        token = "{{ auth()->user()->id }}";
-        console.log(token);
         alert('⚠️ Ada kesalahan fatal. Silakan login ulang.');
         return null;
     }
@@ -147,6 +148,7 @@ function getToken() {
 
 async function fetchNotifications() {
     const token = getToken();
+    console.log('Using token:', token);
     if (!token) return;
     try {
         const res = await fetch('/api/notifications', {

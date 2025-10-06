@@ -53,6 +53,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         // Create token with expiration
         $tokenName = 'user_token_' . now()->timestamp;
         $token = $user->createToken($tokenName, ['*'], now()->addDays(30))->plainTextToken;
+        cookie()->queue('user_token', $token, 60 * 24 * 30, '/', null, false, true); // 30 days, httpOnly, NOT secure
         
         // Log token creation WITHOUT the actual token for security
         logger()->info('User token created', [

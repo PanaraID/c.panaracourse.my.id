@@ -19,7 +19,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
     </head>
-    <body>
+    <body data-user-id="{{ request()->cookie('user_token')}}">
         {{ $slot }}
     </body>
 </html>
