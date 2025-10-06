@@ -1,27 +1,8 @@
 import './bootstrap';
 import './pwa-install';
-import './logger';
-import './debug-console';
-
-// Import testing in development
-if (import.meta.env.DEV) {
-    import('./logging-tests');
-}
 
 // Global message handling for chat (without real-time broadcasting)
 window.currentUserId = null;
-
-// Placeholder functions for compatibility (no broadcasting)
-window.handleNewMessage = function (chatId, callback) {
-    // No broadcasting implementation - messages will be updated via page refresh or manual refresh
-    console.log('Real-time messaging disabled. Please refresh the page to see new messages.');
-};
-
-// Function to leave a chat channel (placeholder)
-window.leaveChatChannel = function (chatId) {
-    // No broadcasting implementation
-    console.log('Real-time messaging disabled.');
-};
 
 // PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
