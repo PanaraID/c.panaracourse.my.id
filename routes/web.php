@@ -11,10 +11,7 @@ use App\Http\Controllers\Admin\LogDashboardController;
 
 Volt::route('/', 'pages.home')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    // Volt::route('/dashboard', 'pages.dashboard')->name('dashboard');
-    Route::redirect('/dashboard', '/chat')->name('dashboard');
-});
+Route::redirect('/dashboard', '/chat')->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
