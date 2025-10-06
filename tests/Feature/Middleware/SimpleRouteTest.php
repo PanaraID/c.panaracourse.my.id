@@ -33,7 +33,8 @@ test('route with auth', function () {
     $user = User::factory()->create();
     $user->assignRole('admin');
 
-    // Test dashboard route works
+    // Test dashboard route works (should redirect to chat)
     $response = $this->actingAs($user)->get('/dashboard');
-    expect($response->status())->toBe(200);
+    expect($response->status())->toBe(302);
+    expect($response->headers->get('Location'))->toBe('/chat');
 });
