@@ -110,5 +110,19 @@ describe('Chat Notification', function () {
         ]);
         $response->assertOk();
         expect($response->json()['notification'])->toBeNull();
+
+        // Jalankan command untuk membersihkan notifikasi yang sudah dipush
+        Artisan::call('app:resend-notifications-every-hour');
+
+        // Member2 should receive the notification again after the command
+        $this->actingAs($member2);
+        $token = $member2->createToken('test-token')->plainTextToken;
+        $response = $this->get('/api/notifications', [
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token
+        ]);
+        $response->assertOk();
+        $notification = $response->json()['notification'];
+        expect($notification)->not->toBeNull();
     });
 });
