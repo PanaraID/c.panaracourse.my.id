@@ -192,6 +192,7 @@ async function setupNotifications() {
 }
 
 // --- Init ---
+console.log('[App] Initializing app.js');
 registerServiceWorker();
 setupInstallPrompt();
 setupOnlineOfflineListeners();
