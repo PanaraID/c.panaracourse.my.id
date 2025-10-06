@@ -54,9 +54,6 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $tokenName = 'user_token_' . now()->timestamp;
         $token = $user->createToken($tokenName, ['*'], now()->addDays(30))->plainTextToken;
         
-        // Store token in secure HTTP-only cookie
-        cookie()->queue('sanctum_token', $token, 60 * 24 * 30, '/', null, true, true); // 30 days, httpOnly, secure
-        
         // Log token creation WITHOUT the actual token for security
         logger()->info('User token created', [
             'user_id' => $user->id, 
@@ -67,9 +64,6 @@ new #[Layout('components.layouts.auth')] class extends Component {
         // if (app()->environment('local')) {
         //     logger()->debug('User token (development only)', ['token' => $token]);
         // }
-        
-        // Store token for JavaScript access using session
-        session(['user_token_for_js' => $token]);
         
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
