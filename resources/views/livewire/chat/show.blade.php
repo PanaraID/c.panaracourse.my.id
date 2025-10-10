@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Validate;
 use Illuminate\Support\Str;
 
-new class extends \Livewire\Volt\Component {
+new
+#[\Livewire\Attributes\Layout('layouts.base')]
+class extends \Livewire\Volt\Component {
     public ?Chat $chat = null;
     public string $newMessage = '';
     public int $lastMessageId = 0;
