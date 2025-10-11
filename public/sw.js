@@ -70,6 +70,7 @@ self.addEventListener('fetch', event => {
       url.pathname.includes('/settings') ||
       url.pathname.includes('/profile') ||
       url.pathname.includes('/dashboard') ||
+      url.pathname.includes('/') ||
       url.pathname.includes('/logout') ||
       url.pathname.includes('/verify-email') ||
       url.searchParams.has('_token') ||
