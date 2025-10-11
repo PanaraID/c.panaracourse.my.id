@@ -9,7 +9,7 @@ use App\Http\Controllers\Admin\LogDashboardController;
 //     return view('welcome');
 // })->name('home');
 
-Volt::route('/', '/login')->name('home');
+Volt::redirect('/', '/login')->name('home');
 
 Route::redirect('/dashboard', '/chat')->name('dashboard');
 
