@@ -27,29 +27,36 @@ new class extends Component {
                 p-3 shadow-xl transition-all duration-300 transform relative
                 {{ $isOwnMessage
                     ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-t-xl rounded-bl-xl rounded-br-2xl hover:from-emerald-600 hover:to-green-700 hover:scale-[1.01] shadow-emerald-500/40'
-                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-xl rounded-tr-2xl rounded-br-xl shadow-gray-300/50 dark:shadow-gray-950/50 hover:scale-[1.01]' }}
+                    : (!$isReaded
+                        ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-gray-900 dark:text-gray-100 rounded-t-xl rounded-tr-2xl rounded-br-xl shadow-blue-300/50 dark:shadow-blue-950/50 hover:scale-[1.01] border-l-4 border-blue-500'
+                        : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-t-xl rounded-tr-2xl rounded-br-xl shadow-gray-300/50 dark:shadow-gray-950/50 hover:scale-[1.01]') }}
             ">
-            
+
             {{-- User Name for Other Messages --}}
             @if (!$isOwnMessage)
                 <div
-                    class="flex items-center space-x-1 mb-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    data-is-readed="{{ $isReaded ? 'true' : 'false' }}"
+                    class="flex items-center space-x-1 mb-1 text-xs font-semibold {{ !$isReaded ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400' }}">
                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
                             clip-rule="evenodd" />
                     </svg>
                     <span>{{ $message->user->name }}</span>
+                    @if (!$isReaded)
+                        <span
+                            class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] bg-blue-500 text-white">NEW</span>
+                    @endif
                 </div>
             @endif
 
             {{-- Message Content --}}
-            <div>
+            <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }}">
                 {!! Str::markdown($message->content) !!}
             </div>
 
             {{-- Timestamp and Status --}}
             <div
-                class="flex items-center justify-end space-x-1.5 mt-1 text-[10px] sm:text-xs {{ $isOwnMessage ? 'text-white/80' : 'text-gray-400 dark:text-gray-400' }}">
+                class="flex items-center justify-end space-x-1.5 mt-1 text-[10px] sm:text-xs {{ $isOwnMessage ? 'text-white/80' : (!$isReaded ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-400') }}">
                 <span class="font-medium">{{ $message->created_at->format('H:i') }}</span>
             </div>
         </div>
