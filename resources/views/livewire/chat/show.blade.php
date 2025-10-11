@@ -112,10 +112,10 @@ class extends \Livewire\Volt\Component {
 
 ?>
 
-<div class="flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 h-screen rounded-2xl overflow-hidden shadow-2xl">
+<div class="flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 h-screen overflow-hidden shadow-2xl">
     @livewire('chat._components.show.header', ['chat' => $chat])
 
-    <div class="flex-1 overflow-y-auto px-4 h-full sm:px-6 py-4 bg-gray-50 dark:bg-gray-900 transition duration-300" wire:poll.2s="refreshMessages" id="messages-container">
+    <div class="flex-1 overflow-y-auto px-4 h-full sm:px-6 py-4 bg-gray-200 dark:bg-gray-900 transition duration-300" wire:poll.2s="refreshMessages" id="messages-container">
 
         @forelse($this->messages() as $message)
             @php $isOwnMessage = $message->user_id === Auth::id(); @endphp

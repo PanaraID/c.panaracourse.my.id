@@ -64,7 +64,7 @@
  ?>
 
  <div
-     class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+     class="bg-zinc-200 dark:bg-gray-800/90 backdrop-blur-xl px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 shadow-lg">
      <form wire:submit="sendMessage" class="flex items-end space-x-3">
          <!-- Message Input -->
          <div class="flex-1 relative" wire:ignore>

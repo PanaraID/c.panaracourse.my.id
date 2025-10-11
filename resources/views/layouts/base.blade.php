@@ -3,10 +3,8 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="bg-zinc-800 dark:bg-zinc-900 min-h-screen" data-user-id="{{ request()->cookie('user_token')}}">
-        <div class="flex flex-col min-h-screen mt-3 p-2">
-            {{ $slot }}
-        </div>
+    <body data-user-id="{{ request()->cookie('user_token')}}">
+        {{ $slot }}
         @fluxScripts
     </body>
 </html>
