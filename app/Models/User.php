@@ -80,6 +80,24 @@ class User extends Authenticatable
         return $this->belongsToMany(Chat::class, 'chat_users')->withTimestamps();
     }
 
+    public function chatUsers(): HasMany
+    {
+        return $this->hasMany(ChatUser::class, 'user_id', 'id');
+    }
+
+    public function hasReadMessage(Message $message): bool
+    {
+        $chatUser = $this->chatUsers()
+            ->where('chat_id', $message->chat_id)
+            ->first();
+
+        if (!$chatUser || !$chatUser->latest_accessed_at) {
+            return false;
+        }
+
+        return $chatUser->latest_accessed_at >= $message->created_at;
+    }
+
     /**
      * Get all messages sent by this user
      */

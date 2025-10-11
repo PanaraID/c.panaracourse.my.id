@@ -2,6 +2,7 @@
  
  use Livewire\Volt\Component;
  use App\Models\Chat;
+ use App\Models\Message;
  
  new class extends Component {
      public $chat;
@@ -93,4 +94,193 @@
              </svg>
          </button>
      </form>
+
+
+
+    <script>
+        let chatId = {{ $chat->id }};
+        window.currentUserId = window.currentUserId || {{ Auth::id() }};
+        let autoScroll = true;
+        let messageInput;
+
+        // Safe Livewire call helper
+        function safeLivewireCall(method, ...args) {
+            if (window.Livewire && @this && typeof @this[method] === 'function') {
+                try {
+                    return @this[method](...args);
+                } catch (error) {
+                    console.error('Livewire call error:', error);
+                    if (window.logger) {
+                        window.logger.error('Livewire call failed', {
+                            method,
+                            args,
+                            error: error.message,
+                            component: 'chat-show'
+                        });
+                    }
+                }
+            } else {
+                console.warn('Livewire not ready for method:', method);
+                if (window.logger) {
+                    window.logger.warn('Livewire not ready', {
+                        method,
+                        livewireExists: !!window.Livewire,
+                        thisExists: !!@this,
+                        component: 'chat-show'
+                    });
+                }
+                return null;
+            }
+        }
+
+        // Safe Livewire set helper
+        function safeLivewireSet(property, value) {
+            if (window.Livewire && @this && typeof @this.set === 'function') {
+                try {
+                    return @this.set(property, value);
+                } catch (error) {
+                    console.error('Livewire set error:', error);
+                    if (window.logger) {
+                        window.logger.error('Livewire set failed', {
+                            property,
+                            value,
+                            error: error.message,
+                            component: 'chat-show'
+                        });
+                    }
+                }
+            } else {
+                console.warn('Livewire not ready for set:', property);
+                if (window.logger) {
+                    window.logger.warn('Livewire not ready for set', {
+                        property,
+                        livewireExists: !!window.Livewire,
+                        thisExists: !!@this,
+                        component: 'chat-show'
+                    });
+                }
+                return null;
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            if (container && autoScroll) {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        function updateHiddenInput() {
+            if (messageInput) {
+                const text = messageInput.innerText.trim();
+                document.getElementById('hidden-message').value = text;
+                safeLivewireSet('newMessage', text);
+            }
+        }
+
+        // Initialize Message Input
+        document.addEventListener('DOMContentLoaded', () => {
+            messageInput = document.getElementById('message-input');
+
+            if (messageInput) {
+                // Handle input changes
+                messageInput.addEventListener('input', function() {
+                    updateHiddenInput();
+
+                    // Show/hide placeholder
+                    if (this.innerText.trim() === '') {
+                        this.classList.add('empty');
+                    } else {
+                        this.classList.remove('empty');
+                    }
+
+                    // Auto-resize
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 128) + 'px';
+                });
+
+                // Handle paste - strip formatting
+                messageInput.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                });
+
+                // Handle Enter key
+                // messageInput.addEventListener('keydown', function(e) {
+                //     if (e.key === 'Enter' && !e.shiftKey) {
+                //         e.preventDefault();
+                //         if (this.innerText.trim() !== '') {
+                //             document.getElementById('send-btn').click();
+                //         }
+                //     }
+                // });
+            }
+
+            const container = document.getElementById('messages-container');
+            if (container) {
+                container.addEventListener('scroll', () => {
+                    const isAtBottom = container.scrollTop + container.clientHeight >= container
+                        .scrollHeight - 10;
+                    autoScroll = isAtBottom;
+                });
+
+                setTimeout(scrollToBottom, 200);
+            }
+        });
+
+        // Auto scroll to bottom when new messages arrive
+        document.addEventListener('livewire:updated', () => {
+            setTimeout(scrollToBottom, 100);
+        });
+
+        // Handle browser notifications and events
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('new-messages-loaded', () => {
+                setTimeout(scrollToBottom, 100);
+            });
+
+            // Clear editor after message sent
+            Livewire.on('message-sent', () => {
+                if (messageInput) {
+                    messageInput.innerText = '';
+                    messageInput.style.height = 'auto';
+                    messageInput.classList.add('empty');
+                    updateHiddenInput();
+                    messageInput.focus();
+                }
+            });
+        });
+
+        // Mark notifications as read on various user interactions
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                markNotificationsAsRead();
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            markNotificationsAsRead();
+        });
+
+        document.addEventListener('click', () => {
+            markNotificationsAsRead();
+        });
+
+        let scrollTimeout;
+        document.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                markNotificationsAsRead();
+            }, 1000);
+        });
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
  </div>

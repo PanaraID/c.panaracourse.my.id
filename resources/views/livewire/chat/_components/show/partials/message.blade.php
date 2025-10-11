@@ -11,9 +11,18 @@ new class extends Component {
 
     public function mount(Message $message, bool $isOwnMessage, bool $isReaded)
     {
+        $user = Auth::user();
+
         $this->message = $message;
         $this->isOwnMessage = $isOwnMessage;
-        $this->isReaded = $isReaded;
+        $this->isReaded = $user->hasReadMessage($message);
+    }
+
+
+
+    public function markNotificationsRead()
+    {
+        $this->markChatNotificationsAsRead();
     }
 };
 ?>
