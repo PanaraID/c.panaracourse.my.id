@@ -5,60 +5,60 @@
  
  new class extends Component {
      public $chat;
-
-    public string $newMessage = '';
+ 
+     public string $newMessage = '';
  
      public function mount(Chat $chat)
      {
          $this->chat = $chat;
      }
-
-      public function sendMessage()
-    {
-        // FIXME tambahkan flasher
-        $this->newMessage = trim($this->newMessage);
-        $this->newMessage = str_replace(["\r\n", "\n", "\r"], '<br>', $this->newMessage);
-        if (preg_match('/(\+62|62|0)?[ -]?\d{2,4}[ -]?\d{2,4}[ -]?\d{2,5}/', $this->newMessage)) {
-            $this->addError('newMessage', 'Pesan tidak boleh mengandung nomor telepon.');
-            return;
-        }
-
-        if (strlen($this->newMessage) < 1) {
-            $this->addError('newMessage', 'Pesan harus terdiri dari minimal 1 karakter.');
-            return;
-        }
-        if (strlen($this->newMessage) > 5000) {
-            $this->addError('newMessage', 'Pesan tidak boleh lebih dari 5000 karakter.');
-            return;
-        }
-
-        $message = Message::create([
-            'chat_id' => $this->chat->id,
-            'user_id' => Auth::id(),
-            'content' => $this->newMessage,
-        ]);
-
-        Log::info('Message sent', [
-            'message_id' => $message->id,
-            'chat_id' => $this->chat->id,
-            'chat_title' => $this->chat->title,
-            'user_name' => Auth::user()->name,
-            'user_id' => Auth::id(),
-            'content_length' => strlen($this->newMessage),
-        ]);
-
-        $this->reset('newMessage');
-
-        $this->lastMessageId = $message->id;
-
-        $this->dispatch('new-message-sent', [
-            'chat_title' => $this->chat->title,
-            'user_name' => Auth::user()->name,
-            'message' => \Str::limit(strip_tags($message->content), 50),
-        ]);
-
-        $this->dispatch('message-sent');
-    }
+ 
+     public function sendMessage()
+     {
+         // FIXME tambahkan flasher
+         $this->newMessage = trim($this->newMessage);
+         $this->newMessage = str_replace(["\r\n", "\n", "\r"], '<br>', $this->newMessage);
+         if (preg_match('/(\+62|62|0)?[ -]?\d{2,4}[ -]?\d{2,4}[ -]?\d{2,5}/', $this->newMessage)) {
+             $this->addError('newMessage', 'Pesan tidak boleh mengandung nomor telepon.');
+             return;
+         }
+ 
+         if (strlen($this->newMessage) < 1) {
+             $this->addError('newMessage', 'Pesan harus terdiri dari minimal 1 karakter.');
+             return;
+         }
+         if (strlen($this->newMessage) > 5000) {
+             $this->addError('newMessage', 'Pesan tidak boleh lebih dari 5000 karakter.');
+             return;
+         }
+ 
+         $message = Message::create([
+             'chat_id' => $this->chat->id,
+             'user_id' => Auth::id(),
+             'content' => $this->newMessage,
+         ]);
+ 
+         Log::info('Message sent', [
+             'message_id' => $message->id,
+             'chat_id' => $this->chat->id,
+             'chat_title' => $this->chat->title,
+             'user_name' => Auth::user()->name,
+             'user_id' => Auth::id(),
+             'content_length' => strlen($this->newMessage),
+         ]);
+ 
+         $this->reset('newMessage');
+ 
+         $this->lastMessageId = $message->id;
+ 
+         $this->dispatch('new-message-sent', [
+             'chat_title' => $this->chat->title,
+             'user_name' => Auth::user()->name,
+             'message' => \Str::limit(strip_tags($message->content), 50),
+         ]);
+ 
+         $this->dispatch('message-sent');
+     }
  };
  
  ?>
