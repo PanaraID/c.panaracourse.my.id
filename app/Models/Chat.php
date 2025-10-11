@@ -10,13 +10,7 @@ use Illuminate\Support\Str;
 
 class Chat extends Model
 {
-    protected $fillable = [
-        'title',
-        'description',
-        'slug',
-        'created_by',
-        'is_active'
-    ];
+    protected $guarded = ['id'];
 
     protected $attributes = [
         'is_active' => true,

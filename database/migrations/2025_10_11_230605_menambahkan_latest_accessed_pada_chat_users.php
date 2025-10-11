@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('messages', function (Blueprint $table) {
-            $table->timestamp('readed_at')->nullable()->after('content');
+        Schema::table('chat_users', function (Blueprint $table) {
+            $table->timestamp('latest_accessed_at')->nullable()->after('content');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('messages', function (Blueprint $table) {
-            $table->dropColumn('readed_at');
+        Schema::table('chat_users', function (Blueprint $table) {
+            $table->dropColumn('latest_accessed_at');
         });
     }
 };
