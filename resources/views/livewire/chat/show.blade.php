@@ -222,7 +222,7 @@ class extends \Livewire\Volt\Component {
             </div>
         </div>
     </div>
-    <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-900 transition duration-300"
+    <div class="flex-1 overflow-y-auto px-4 h-full sm:px-6 py-4 bg-gray-50 dark:bg-gray-900 transition duration-300"
         wire:poll.2s="refreshMessages" id="messages-container">
 
         @forelse($this->messages() as $message)
