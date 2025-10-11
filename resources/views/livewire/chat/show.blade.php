@@ -41,6 +41,7 @@ class extends \Livewire\Volt\Component {
 
         $lastMessage = $this->chat->messages()->latest()->first();
         $this->lastMessageId = $lastMessage ? $lastMessage->id : 0;
+        $this->markChatNotificationsAsRead();
 
         Log::info('User accessed chat', [
             'chat_id' => $chat->id,

@@ -8,21 +8,14 @@ use App\Events\MessageSent;
 
 class Message extends Model
 {
-    protected $fillable = [
-        'chat_id',
-        'user_id',
-        'content',
-        'is_edited',
-        'edited_at'
-    ];
+    protected $guarded = ['id'];
 
     protected $attributes = [
         'is_edited' => false,
     ];
 
     protected $casts = [
-        'is_edited' => 'boolean',
-        'edited_at' => 'datetime'
+        'readed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -47,13 +40,5 @@ class Message extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function markAsEdited(): void
-    {
-        $this->update([
-            'is_edited' => true,
-            'edited_at' => now()
-        ]);
     }
 }

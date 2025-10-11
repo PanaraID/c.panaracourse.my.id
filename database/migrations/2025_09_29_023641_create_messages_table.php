@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('chat_id')->constrained('chats')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('content');
-            $table->boolean('is_edited')->default(false);
-            $table->timestamp('edited_at')->nullable();
             $table->timestamps();
             
             $table->index(['chat_id', 'created_at']);

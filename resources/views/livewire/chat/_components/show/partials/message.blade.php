@@ -7,11 +7,13 @@ use Illuminate\Support\Facades\Auth;
 new class extends Component {
     public Message $message;
     public bool $isOwnMessage;
+    public bool $isReaded;
 
-    public function mount(Message $message, bool $isOwnMessage)
+    public function mount(Message $message, bool $isOwnMessage, bool $isReaded)
     {
         $this->message = $message;
         $this->isOwnMessage = $isOwnMessage;
+        $this->isReaded = $isReaded;
     }
 };
 ?>

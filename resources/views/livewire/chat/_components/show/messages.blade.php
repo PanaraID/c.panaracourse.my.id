@@ -24,6 +24,7 @@ new class extends Component {
     @foreach ($this->messages() as $message)
         @php
             $isOwnMessage = $message->user_id === Auth::id();
+            $isReaded = $message->readed_at !== null;
             $currentDate = $message->created_at->toDateString();
         @endphp
 
@@ -39,7 +40,7 @@ new class extends Component {
         @endif
 
         <div class="transition-all duration-200">
-            @livewire('chat._components.show.partials.message', ['message' => $message, 'isOwnMessage' => $isOwnMessage])
+            @livewire('chat._components.show.partials.message', ['message' => $message, 'isOwnMessage' => $isOwnMessage, 'isReaded' => $isReaded])
         </div>
     @endforeach
 </div>
