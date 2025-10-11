@@ -158,7 +158,7 @@ class extends \Livewire\Volt\Component {
 ?>
 
 <div
-    class="flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 h-[90vh] rounded-2xl overflow-hidden shadow-2xl">
+    class="flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 h-screen rounded-2xl overflow-hidden shadow-2xl">
     <!-- Chat Header - Modern WhatsApp Style -->
     <div
         class="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 dark:from-emerald-700 dark:via-green-700 dark:to-teal-700 px-6 py-4 shadow-lg backdrop-blur-sm">
@@ -726,14 +726,14 @@ class extends \Livewire\Volt\Component {
                 });
 
                 // Handle Enter key
-                messageInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (this.innerText.trim() !== '') {
-                            document.getElementById('send-btn').click();
-                        }
-                    }
-                });
+                // messageInput.addEventListener('keydown', function(e) {
+                //     if (e.key === 'Enter' && !e.shiftKey) {
+                //         e.preventDefault();
+                //         if (this.innerText.trim() !== '') {
+                //             document.getElementById('send-btn').click();
+                //         }
+                //     }
+                // });
             }
 
             const container = document.getElementById('messages-container');
