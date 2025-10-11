@@ -268,10 +268,6 @@ class extends \Livewire\Volt\Component {
                             class="flex items-center justify-end space-x-1.5 mt-1 text-[10px] sm:text-xs 
                                 {{ $isOwnMessage ? 'text-white/80' : 'text-gray-400 dark:text-gray-400' }}">
                             <span class="font-medium">{{ $message->created_at->format('H:i') }}</span>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
                         </div>
 
                     </div>
