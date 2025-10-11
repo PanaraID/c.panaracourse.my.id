@@ -42,8 +42,6 @@ class extends \Livewire\Volt\Component {
         $lastMessage = $this->chat->messages()->latest()->first();
         $this->lastMessageId = $lastMessage ? $lastMessage->id : 0;
 
-        $this->markChatNotificationsAsRead();
-
         Log::info('User accessed chat', [
             'chat_id' => $chat->id,
             'chat_title' => $chat->title,
@@ -67,24 +65,6 @@ class extends \Livewire\Volt\Component {
         }
 
         return $updatedCount;
-    }
-
-   
-
-    public function deleteMessage($messageId)
-    {
-        $message = Message::findOrFail($messageId);
-
-        if ($message->user_id === Auth::id() || Auth::user()->hasRole('admin')) {
-            Log::info('Message deleted', [
-                'message_id' => $message->id,
-                'chat_id' => $this->chat->id,
-                'deleted_by' => Auth::user()->name,
-                'user_id' => Auth::id(),
-            ]);
-
-            $message->delete();
-        }
     }
 
     public function refreshMessages()
