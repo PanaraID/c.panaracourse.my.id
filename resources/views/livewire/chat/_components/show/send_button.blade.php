@@ -66,15 +66,17 @@ new class extends Component {
             ],
         ]);
 
-        // Ganti baris baru (\n, \r\n) dengan tag <br> untuk tampilan HTML
-        $content = str_replace(["\r\n", "\n", "\r"], '<br>', $this->newMessage);
+        // BARIS INI DIUBAH / DIHAPUS: 
+        // Hapus/Ganti logic str_replace dengan ini agar baris baru (\n) tetap dipertahankan
+        // Ini esensial untuk Markdown (terutama blok kode)
+        $content = $this->newMessage; // Ambil konten dengan baris baru (\n) yang ada di dalamnya
 
         try {
             // 3. Buat dan simpan pesan ke database
             $message = Message::create([
                 'chat_id' => $this->chat->id,
                 'user_id' => Auth::id(),
-                'content' => $content,
+                'content' => $content, // Konten sekarang berisi \n untuk format Markdown
             ]);
 
             // 4. Log Aktivitas
@@ -101,9 +103,6 @@ new class extends Component {
 
             // 7. Reset input form
             $this->reset('newMessage');
-
-            // TODO: Tambahkan notifikasi flasher di sini jika digunakan
-            // flasher()->success('Pesan berhasil dikirim.');
 
         } catch (\Exception $e) {
             // 8. Error Handling
@@ -210,6 +209,7 @@ new class extends Component {
             }
 
             function updateHiddenInput() {
+                // NOTE: innerText menangkap baris baru (\n)
                 const text = messageInput.innerText.trim();
                 if (hiddenInput) {
                     hiddenInput.value = text;
@@ -226,6 +226,60 @@ new class extends Component {
 
             // --- Event Listeners ---
 
+            // Handle keyboard shortcuts for markdown
+            messageInput.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + B untuk bold
+                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                    e.preventDefault();
+                    wrapSelectedText('**', '**');
+                }
+                
+                // Ctrl/Cmd + I untuk italic
+                if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                    e.preventDefault();
+                    wrapSelectedText('*', '*');
+                }
+                
+                // Ctrl/Cmd + ` untuk inline code
+                if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+                    e.preventDefault();
+                    wrapSelectedText('`', '`');
+                }
+                
+                // Ctrl/Cmd + Shift + C untuk code block
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                    e.preventDefault();
+                    wrapSelectedText('\n```\n', '\n```\n');
+                }
+            });
+            
+            // Function to wrap selected text with markdown syntax
+            function wrapSelectedText(before, after) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const selectedText = range.toString();
+                    
+                    // Jika tidak ada teks yang dipilih, tambahkan placeholder
+                    const textToWrap = selectedText || 'text';
+                    const wrappedText = before + textToWrap + after;
+                    
+                    range.deleteContents();
+                    range.insertNode(document.createTextNode(wrappedText));
+                    
+                    // Jika tidak ada teks yang dipilih, pilih placeholder
+                    if (!selectedText) {
+                        const newRange = document.createRange();
+                        newRange.setStart(range.startContainer, range.startOffset - after.length - 4); // 4 = length of 'text'
+                        newRange.setEnd(range.startContainer, range.startOffset - after.length);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
+                    
+                    updateHiddenInput();
+                }
+            }
+            
             // Handle input changes
             messageInput.addEventListener('input', function() {
                 updateHiddenInput();
@@ -236,28 +290,238 @@ new class extends Component {
                 this.style.height = Math.min(this.scrollHeight, 144) + 'px';
             });
 
-            // Handle paste - strip formatting
+            // Handle paste - convert to markdown format
             messageInput.addEventListener('paste', function(e) {
                 e.preventDefault();
-                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                
+                // Ambil data clipboard
+                const clipboardData = e.clipboardData || window.clipboardData;
+                console.log('Clipboard Data:', clipboardData);
+                let text = clipboardData.getData('text/plain');
+                let html = clipboardData.getData('text/html');
+                
+                // Fungsi untuk convert HTML ke Markdown yang lebih robust
+                function htmlToMarkdown(htmlContent) {
+                    if (!htmlContent || htmlContent.trim() === '') return text;
+                    
+                    // Buat temporary div untuk parsing HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = htmlContent;
+                    
+                    // Fungsi rekursif untuk convert DOM node ke markdown
+                    function nodeToMarkdown(node) {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            return node.textContent;
+                        }
+                        
+                        if (node.nodeType !== Node.ELEMENT_NODE) {
+                            return '';
+                        }
+                        
+                        const tagName = node.tagName.toLowerCase();
+                        let content = '';
+                        
+                        // Process children first
+                        for (let child of node.childNodes) {
+                            content += nodeToMarkdown(child);
+                        }
+                        
+                        // Apply markdown formatting based on tag
+                        switch (tagName) {
+                            case 'strong':
+                            case 'b':
+                                return `**${content}**`;
+                                
+                            case 'em':
+                            case 'i':
+                                return `*${content}*`;
+                                
+                            case 'code':
+                                // Jika parent adalah pre, skip karena akan dihandle oleh pre
+                                if (node.parentNode && node.parentNode.tagName.toLowerCase() === 'pre') {
+                                    return content;
+                                }
+                                return `\`${content}\``;
+                                
+                            case 'pre':
+                                // Handle code blocks
+                                const codeChild = node.querySelector('code');
+                                const codeContent = codeChild ? codeChild.textContent : content;
+                                return `\n\`\`\`\n${codeContent}\n\`\`\`\n\n`;
+                                
+                            case 'h1':
+                                return `\n# ${content}\n\n`;
+                            case 'h2':
+                                return `\n## ${content}\n\n`;
+                            case 'h3':
+                                return `\n### ${content}\n\n`;
+                            case 'h4':
+                                return `\n#### ${content}\n\n`;
+                            case 'h5':
+                                return `\n##### ${content}\n\n`;
+                            case 'h6':
+                                return `\n###### ${content}\n\n`;
+                                
+                            case 'p':
+                                return `${content}\n\n`;
+                                
+                            case 'br':
+                                return '\n';
+                                
+                            case 'a':
+                                const href = node.getAttribute('href');
+                                if (href) {
+                                    return `[${content}](${href})`;
+                                }
+                                return content;
+                                
+                            case 'li':
+                                return `- ${content}\n`;
+                                
+                            case 'ul':
+                            case 'ol':
+                                return `\n${content}\n`;
+                                
+                            case 'blockquote':
+                                return `\n> ${content.split('\n').join('\n> ')}\n\n`;
+                                
+                            case 'hr':
+                                return '\n---\n\n';
+                                
+                            case 'div':
+                            case 'span':
+                            case 'section':
+                            case 'article':
+                                // Untuk container elements, return content saja
+                                return content;
+                                
+                            default:
+                                return content;
+                        }
+                    }
+                    
+                    let markdown = nodeToMarkdown(tempDiv);
+                    
+                    // Clean up the markdown
+                    markdown = markdown
+                        // Fix multiple newlines
+                        .replace(/\n{3,}/g, '\n\n')
+                        // Fix spaces around bold/italic
+                        .replace(/\s+\*\*/g, ' **')
+                        .replace(/\*\*\s+/g, '** ')
+                        .replace(/\s+\*/g, ' *')
+                        .replace(/\*\s+/g, '* ')
+                        // Fix spaces around code
+                        .replace(/\s+`/g, ' `')
+                        .replace(/`\s+/g, '` ')
+                        // Remove leading/trailing whitespace
+                        .trim();
+                    
+                    return markdown;
+                }
+                
+                // Prioritas: Jika ada HTML content, convert ke markdown, jika tidak pakai plain text
+                let finalText = text; // Default fallback
+                
+                if (html && html.trim() !== '') {
+                    try {
+                        finalText = htmlToMarkdown(html);
+                        // Jika hasil konversi kosong atau hanya whitespace, fallback ke plain text
+                        if (!finalText || finalText.trim() === '') {
+                            finalText = text;
+                        }
+                    } catch (error) {
+                        console.warn('HTML to Markdown conversion failed:', error);
+                        finalText = text; // Fallback ke plain text
+                    }
+                }
+                
+                // Special handling untuk konten website umum
+                finalText = enhanceMarkdownForWebsites(finalText, html);
                 
                 // Insert text at cursor position
                 const selection = window.getSelection();
                 if (selection.rangeCount > 0) {
                     const range = selection.getRangeAt(0);
                     range.deleteContents();
-                    range.insertNode(document.createTextNode(text));
+                    range.insertNode(document.createTextNode(finalText));
                     range.collapse(false);
                 }
                 
                 updateHiddenInput();
+                
+                // Auto-resize setelah paste
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 144) + 'px';
             });
+            
+            // Fungsi untuk enhance markdown dari website umum
+            function enhanceMarkdownForWebsites(markdown, originalHtml) {
+                if (!originalHtml) return markdown;
+                
+                // Deteksi jika ini dari GitHub, Stack Overflow, atau situs developer lain
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = originalHtml;
+                
+                // Handle GitHub code blocks (class="highlight")
+                if (originalHtml.includes('class="highlight"') || originalHtml.includes('class="language-')) {
+                    const codeBlocks = tempDiv.querySelectorAll('.highlight, [class*="language-"]');
+                    codeBlocks.forEach(block => {
+                        const code = block.textContent || block.innerText;
+                        if (code && code.trim()) {
+                            // Deteksi bahasa dari class name
+                            let language = '';
+                            const classes = block.className;
+                            const langMatch = classes.match(/language-(\w+)/);
+                            if (langMatch) {
+                                language = langMatch[1];
+                            }
+                            
+                            // Replace di markdown
+                            const placeholder = block.outerHTML;
+                            if (markdown.includes(code)) {
+                                markdown = markdown.replace(code, `\n\`\`\`${language}\n${code}\n\`\`\`\n`);
+                            }
+                        }
+                    });
+                }
+                
+                // Handle Wikipedia/artikel dengan citations [1], [2], dll
+                markdown = markdown.replace(/\[\d+\]/g, ''); // Remove citations
+                
+                // Handle multiple spaces (common di website)
+                markdown = markdown.replace(/[ \t]+/g, ' '); // Multiple spaces jadi satu
+                
+                // Handle list yang tidak proper
+                markdown = markdown.replace(/^[\s]*[•·‣▸▪▫‸]\s+/gm, '- '); // Bullet points to markdown
+                markdown = markdown.replace(/^[\s]*\d+[\.\)]\s+/gm, '1. '); // Numbered lists
+                
+                // Clean up extra newlines tapi preserve code blocks
+                const codeBlockRegex = /```[\s\S]*?```/g;
+                const codeBlocks = markdown.match(codeBlockRegex) || [];
+                let tempMarkdown = markdown;
+                
+                // Replace code blocks dengan placeholder
+                codeBlocks.forEach((block, index) => {
+                    tempMarkdown = tempMarkdown.replace(block, `__CODEBLOCK_${index}__`);
+                });
+                
+                // Clean up di area non-code
+                tempMarkdown = tempMarkdown.replace(/\n{3,}/g, '\n\n');
+                
+                // Restore code blocks
+                codeBlocks.forEach((block, index) => {
+                    tempMarkdown = tempMarkdown.replace(`__CODEBLOCK_${index}__`, block);
+                });
+                
+                return tempMarkdown.trim();
+            }
             
             // Panggil inisialisasi awal
             updateHiddenInput();
             
             // Set initial focus
-            messageInput.focus();
+            // messageInput.focus(); // Diberi komentar agar tidak mengganggu fokus saat load
         };
 
         // Livewire Initialization
