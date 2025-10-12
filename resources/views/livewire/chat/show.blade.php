@@ -37,8 +37,6 @@ class extends \Livewire\Volt\Component {
     @livewire('chat._components.show.header', ['chat' => $chat])
 
     <div class="flex-1 overflow-y-auto px-4 h-full sm:px-6 py-4 bg-gray-200 dark:bg-gray-900 transition duration-300" id="messages-container">
-
-        
         @if ($chat->messages()->count() == 0)
             @livewire('chat._components.show.empty_chat')
         @else
@@ -48,7 +46,7 @@ class extends \Livewire\Volt\Component {
 
     <!-- Message Input Footer -->
     @can('send-message')
-        @livewire('chat._components.show.send_button', ['chat' => $chat])
+        @livewire('chat._components.show.send_message', ['chat' => $chat])
     @endcan
 
 </div>
