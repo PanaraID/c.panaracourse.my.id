@@ -59,7 +59,13 @@ new class extends Component {
 
             {{-- Message Content --}}
             <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }}">
-                {!! Str::markdown($message->content) !!}
+                {{ Str::markdown($message->content, [
+                    'allow_unsafe_links' => false,
+                    'html_input' => 'strip',
+                    'renderer' => [
+                        'soft_break' => "\n",
+                    ]
+                ]) }}
             </div>
 
             {{-- Timestamp and Status --}}
