@@ -220,29 +220,8 @@
                 // });
             }
 
-            const container = document.getElementById('messages-container');
-            if (container) {
-                container.addEventListener('scroll', () => {
-                    const isAtBottom = container.scrollTop + container.clientHeight >= container
-                        .scrollHeight - 10;
-                    autoScroll = isAtBottom;
-                });
-
-                setTimeout(scrollToBottom, 200);
-            }
-        });
-
-        // Auto scroll to bottom when new messages arrive
-        document.addEventListener('livewire:updated', () => {
-            setTimeout(scrollToBottom, 100);
-        });
-
         // Handle browser notifications and events
         document.addEventListener('livewire:init', () => {
-            Livewire.on('new-messages-loaded', () => {
-                setTimeout(scrollToBottom, 100);
-            });
-
             // Clear editor after message sent
             Livewire.on('message-sent', () => {
                 if (messageInput) {
@@ -253,14 +232,6 @@
                     messageInput.focus();
                 }
             });
-        });
-
-        let scrollTimeout;
-        document.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                // FIXME
-            }, 1000);
         });
 
         // Request notification permission

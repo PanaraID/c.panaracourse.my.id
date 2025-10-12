@@ -28,7 +28,7 @@ new class extends Component {
 ?>
 
 {{-- Message Bubble Wrapper --}}
-<div
+<div data-is-readed="{{ $isReaded ? 'true' : 'false' }}"
     class="flex mb-4 animate-slide-in-{{ $isOwnMessage ? 'right' : 'left' }} {{ $isOwnMessage ? 'justify-end' : 'justify-start' }}">
     <div class="max-w-[85%] sm:max-w-[70%] group">
         <div
@@ -44,7 +44,6 @@ new class extends Component {
             {{-- User Name for Other Messages --}}
             @if (!$isOwnMessage)
                 <div
-                    data-is-readed="{{ $isReaded ? 'true' : 'false' }}"
                     class="flex items-center space-x-1 mb-1 text-xs font-semibold {{ !$isReaded ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400' }}">
                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
