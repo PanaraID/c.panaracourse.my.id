@@ -13,23 +13,6 @@ new
 #[\Livewire\Attributes\Layout('layouts.base')]
 class extends \Livewire\Volt\Component {
     public ?Chat $chat = null;
-    public string $newMessage = '';
-    public int $lastMessageId = 0;
-
-    public function messages()
-    {
-        if (!$this->chat) {
-            return collect();
-        }
-
-        $messages = $this->chat->messages()->with('user')->latest()->get()->values();
-
-        if ($messages->isNotEmpty()) {
-            $this->lastMessageId = $messages->last()->id;
-        }
-
-        return $messages;
-    }
 
     public function mount(Chat $chat)
     {
@@ -38,9 +21,6 @@ class extends \Livewire\Volt\Component {
         }
 
         $this->chat = $chat;
-
-        $lastMessage = $this->chat->messages()->latest()->first();
-        $this->lastMessageId = $lastMessage ? $lastMessage->id : 0;
 
         Log::info('User accessed chat', [
             'chat_id' => $chat->id,

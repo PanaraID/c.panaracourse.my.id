@@ -70,7 +70,6 @@ new class extends Component {
         try {
             return Message::where('chat_id', $this->chat->id)
                 ->with('user')
-                ->latest('created_at')
                 ->get();
         } catch (\Exception $e) {
             Log::error('Error loading messages', [
