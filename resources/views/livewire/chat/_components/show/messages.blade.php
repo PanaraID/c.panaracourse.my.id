@@ -225,7 +225,7 @@ new class extends Component {
 
 ?>
 
-<div class="space-y-6 chat-background" wire:poll.5s="refreshMessages" id="messages-container"
+<div class="space-y-6 chat-background" wire:poll.3s="refreshMessages" id="messages-container"
     wire:key="chat-container-{{ $chat->id }}">
     @php $prevDate = null; @endphp
 
