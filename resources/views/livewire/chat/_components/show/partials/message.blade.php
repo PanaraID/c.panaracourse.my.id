@@ -3,11 +3,13 @@
 use Livewire\Volt\Component;
 use App\Models\Message;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str; // Tambahkan ini
 
 new class extends Component {
     public Message $message;
     public bool $isOwnMessage;
     public bool $isReaded;
+    public string $parsedContent; // Property baru
 
     public function mount(Message $message, bool $isOwnMessage, bool $isReaded)
     {
@@ -16,8 +18,22 @@ new class extends Component {
         $this->message = $message;
         $this->isOwnMessage = $isOwnMessage;
         $this->isReaded = $user->hasReadMessage($message);
-    }
 
+        // Mengonversi Markdown menjadi HTML yang aman
+        $this->parsedContent = Str::markdown($message->content, [
+            // Konfigurasi untuk menghilangkan HTML mentah (mencegah XSS dan tombol)
+            'html_input' => 'strip', 
+            // Menonaktifkan tautan yang dianggap berbahaya
+            'allow_unsafe_links' => false, 
+            
+            // Konfigurasi CommonMark untuk mendukung format dasar (seperti WhatsApp)
+            'commonmark' => [
+                'enable_em' => true,     // *teks* atau _teks_
+                'enable_strong' => true, // **teks** atau __teks__
+            ],
+            // Anda dapat mengatur 'extensions' untuk membatasi fitur (misalnya, menghapus TableExtension)
+        ]);
+    }
 
 
     public function markNotificationsRead()
@@ -57,15 +73,10 @@ new class extends Component {
                 </div>
             @endif
 
-            {{-- Message Content --}}
-            <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }}">
-                {{ Str::markdown($message->content, [
-                    'allow_unsafe_links' => false,
-                    'html_input' => 'strip',
-                    'renderer' => [
-                        'soft_break' => "\n",
-                    ]
-                ]) }}
+            {{-- Message Content (PERUBAHAN DI SINI) --}}
+            <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }} prose dark:prose-invert">
+                {{-- Tampilkan konten yang sudah di-parse dan di-sanitize --}}
+                {!! $parsedContent !!} 
             </div>
 
             {{-- Timestamp and Status --}}

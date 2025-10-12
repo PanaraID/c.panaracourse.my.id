@@ -167,6 +167,21 @@ new class extends Component {
     @enderror
 
     <script>
+
+
+            function scrollToBottom() {
+                const container = document.getElementById('messages-container');
+                // Asumsi 'messages-container' adalah div utama yang menampung pesan dan bisa discroll
+                if (container) {
+                    requestAnimationFrame(() => {
+                        container.scrollTo({
+                            top: container.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    });
+                }
+            }
+
         // Gunakan fungsi global agar bisa diakses oleh x-init
         window.initializeMessageInput = function(messageInput, chatId) {
             'use strict';
@@ -209,19 +224,6 @@ new class extends Component {
                 }
             }
 
-            function scrollToBottom() {
-                const container = document.getElementById('messages-container');
-                // Asumsi 'messages-container' adalah div utama yang menampung pesan dan bisa discroll
-                if (container) {
-                    requestAnimationFrame(() => {
-                        container.scrollTo({
-                            top: container.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    });
-                }
-            }
-
             // --- Event Listeners ---
 
             // Handle input changes
@@ -249,16 +251,6 @@ new class extends Component {
                 }
                 
                 updateHiddenInput();
-            });
-
-            // Handle Enter key: Kirim jika Enter tanpa Shift
-            messageInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (this.innerText.trim() !== '' && sendBtn && !sendBtn.disabled) {
-                        sendBtn.click();
-                    }
-                }
             });
             
             // Panggil inisialisasi awal

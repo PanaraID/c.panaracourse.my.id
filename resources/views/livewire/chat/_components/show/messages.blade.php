@@ -457,53 +457,7 @@ new class extends Component {
              * Handle new messages loaded event
              */
             Livewire.on('new-messages-loaded', () => {
-                try {
-                    if (scrollTimeout) {
-                        clearTimeout(scrollTimeout);
-                    }
-
-                    if (isScrolling) {
-                        return;
-                    }
-
-                    isScrolling = true;
-
-                    // Use requestAnimationFrame for better performance
-                    requestAnimationFrame(() => {
-                        const container = document.getElementById('messages-container');
-
-                        if (container) {
-                            // Find the first unread message
-                            const firstUnreadElement = container.querySelector(
-                                '[data-is-readed="false"]');
-
-                            scrollTimeout = setTimeout(() => {
-                                if (firstUnreadElement) {
-                                    // Scroll to the first unread message
-                                    firstUnreadElement.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'center'
-                                    });
-                                } else {
-                                    // No unread messages, scroll to bottom
-                                    container.scrollTo({
-                                        top: container.scrollHeight,
-                                        behavior: 'smooth'
-                                    });
-                                }
-
-                                setTimeout(() => {
-                                    isScrolling = false;
-                                }, 500);
-                            }, 100);
-                        } else {
-                            isScrolling = false;
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error handling new messages:', error);
-                    isScrolling = false;
-                }
+                // TODO
             });
 
             /**
@@ -533,6 +487,36 @@ new class extends Component {
                 }
             });
         });
+
+        const container = document.getElementById('messages-container');
+
+        if (container) {
+            // Find the first unread message
+            const firstUnreadElement = container.querySelector(
+                '[data-is-readed="false"]');
+
+            scrollTimeout = setTimeout(() => {
+                if (firstUnreadElement) {
+                    // Scroll to the first unread message
+                    firstUnreadElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                } else {
+                    // No unread messages, scroll to bottom
+                    container.scrollTo({
+                        top: container.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 500);
+            }, 100);
+        } else {
+            isScrolling = false;
+        }
 
         /**
          * Handle page visibility changes to optimize polling
