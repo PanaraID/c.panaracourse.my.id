@@ -255,26 +255,11 @@
             });
         });
 
-        // Mark notifications as read on various user interactions
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                markNotificationsAsRead();
-            }
-        });
-
-        window.addEventListener('focus', () => {
-            markNotificationsAsRead();
-        });
-
-        document.addEventListener('click', () => {
-            markNotificationsAsRead();
-        });
-
         let scrollTimeout;
         document.addEventListener('scroll', () => {
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => {
-                markNotificationsAsRead();
+                // FIXME
             }, 1000);
         });
 
