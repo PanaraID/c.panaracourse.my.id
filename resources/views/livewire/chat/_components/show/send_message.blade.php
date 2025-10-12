@@ -121,14 +121,19 @@ new class extends Component {
 ?>
 
 <div
-    class="sticky bottom-0 bg-white dark:bg-gray-900/90 backdrop-blur-xl px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-800 shadow-xl z-10">
-    <form wire:submit="sendMessage" class="flex items-end space-x-3">
+    class="sticky bottom-0 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl px-4 sm:px-6 py-4 border-t border-gray-200 shadow-xl z-10">
+    <form wire:submit="sendMessage" class="flex items-end gap-4">
         <div class="flex-1 relative">
-            <div id="message-input-{{ $chat->id }}" contenteditable="true" data-placeholder="Ketik pesan..."
-                class="w-full max-h-36 overflow-y-auto px-5 py-3.5 bg-gray-100 dark:bg-gray-700 rounded-3xl focus:outline-none text-gray-800 dark:text-gray-100 text-[15px] shadow-inner transition-all duration-300 transform-gpu
-                       @error('newMessage') border-2 border-red-500 ring-4 ring-red-500/20 dark:bg-red-900/10 @else border-2 border-transparent focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 @enderror"
-                style="min-height: 48px; line-height: 1.5;"
-                x-data="{}" 
+            <div
+                id="message-input-{{ $chat->id }}"
+                    wire:ignore
+
+                contenteditable="true"
+                data-placeholder="Ketik pesan..."
+                class="w-full max-h-36 overflow-y-auto px-6 py-4 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-gray-800 dark:via-gray-900 dark:to-gray-700 rounded-3xl focus:outline-none text-gray-900 dark:text-gray-100 text-[15px] shadow-lg ring-1 ring-gray-200 dark:ring-gray-700 transition-all duration-300 transform-gpu
+                    @error('newMessage') border-2 border-red-500 ring-4 ring-red-500/20 dark:bg-red-900/10 @else border-2 border-transparent focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 @enderror"
+                style="min-height: 52px; line-height: 1.6;"
+                x-data="{}"
                 x-init="
                     $nextTick(() => {
                         window.initializeMessageInput($el, '{{ $chat->id }}');
@@ -138,18 +143,22 @@ new class extends Component {
             <input type="hidden" wire:model="newMessage" id="hidden-message-{{ $chat->id }}">
         </div>
 
-        <button type="submit" id="send-btn-{{ $chat->id }}"
-            class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/50 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        <button
+            type="submit"
+            id="send-btn-{{ $chat->id }}"
+            class="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-emerald-500 via-green-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-full flex items-center justify-center shadow-xl shadow-emerald-500/40 transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             wire:loading.attr="disabled"
-            wire:target="sendMessage">
+            wire:target="sendMessage"
+            aria-label="Kirim Pesan"
+        >
             <span wire:loading.remove wire:target="sendMessage">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-7 h-7 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                         d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                 </svg>
             </span>
             <span wire:loading wire:target="sendMessage">
-                <svg class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg class="w-7 h-7 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
