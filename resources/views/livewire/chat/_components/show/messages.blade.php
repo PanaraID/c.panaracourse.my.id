@@ -2,20 +2,52 @@
 
 use Livewire\Volt\Component;
 use App\Models\Chat;
+use App\Models\Message;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     public $chat;
     public $lastMessageId;
+    public $refreshKey = 0; // Add refresh key to force re-render
+    public $isRefreshing = false; // Add lock to prevent concurrent refreshes
 
     public function mount(Chat $chat)
     {
         $this->chat = $chat;
-        $this->lastMessageId = $chat->messages()->latest()->first()?->id ?? null;
+        $this->lastMessageId = Message::where('chat_id', $chat->id)
+            ->orderBy('created_at', 'desc')
+            ->first()?->id ?? null;
     }
 
     public function messages()
     {
-        return $this->chat->messages()->with('user')->latest()->get();
+        try {
+            // Query messages directly to avoid any relationship caching issues
+            $messages = Message::where('chat_id', $this->chat->id)
+                ->with('user')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Only log in debug mode to avoid log spam
+            if (config('app.debug')) {
+                Log::debug('Messages retrieved', [
+                    'chat_id' => $this->chat->id,
+                    'message_count' => $messages->count(),
+                    'user_id' => Auth::id()
+                ]);
+            }
+            
+            return $messages;
+        } catch (\Exception $e) {
+            Log::error('Error retrieving messages', [
+                'chat_id' => $this->chat->id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return collect(); // Return empty collection on error
+        }
     }
 
 
@@ -44,24 +76,50 @@ new class extends Component {
 
     public function refreshMessages()
     {
-        $latestMessage = $this->chat->messages()->latest()->first();
-        $user = Auth::user();
+        // Prevent concurrent refreshes
+        if ($this->isRefreshing) {
+            return;
+        }
+        
+        $this->isRefreshing = true;
+        
+        try {
+            $latestMessage = Message::where('chat_id', $this->chat->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+            $user = Auth::user();
 
-        $chatUser = $user->chatUsers()->where('chat_id', $this->chat->id)->first();
-        $chatUser->latest_accessed_at = now();
-        $chatUser->save();
+            // Safely update user's last access time
+            if ($user) {
+                $chatUser = $user->chatUsers()->where('chat_id', $this->chat->id)->first();
+                if ($chatUser) {
+                    $chatUser->latest_accessed_at = now();
+                    $chatUser->save();
+                }
+            }
 
-        if ($latestMessage && $latestMessage->id > $this->lastMessageId) {
-            $this->lastMessageId = $latestMessage->id;
-            $this->markChatNotificationsAsRead();
-            $this->dispatch('new-messages-loaded');
+            // Only trigger updates if there are new messages
+            if ($latestMessage && $latestMessage->id > $this->lastMessageId) {
+                $this->lastMessageId = $latestMessage->id;
+                $this->refreshKey++; // Force component re-render
+                $this->markChatNotificationsAsRead();
+                $this->dispatch('new-messages-loaded');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error refreshing messages', [
+                'chat_id' => $this->chat->id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+        } finally {
+            $this->isRefreshing = false;
         }
     }
 };
 
 ?>
 
-<div class="space-y-6"  wire:poll.2s="refreshMessages" id="messages-container">
+<div class="space-y-6" wire:poll.5s="refreshMessages" wire:key="messages-{{ $refreshKey }}" id="messages-container">
     @php $prevDate = null; @endphp
     @foreach ($this->messages() as $message)
         @php
@@ -297,4 +355,17 @@ new class extends Component {
             height: 300px;
         }
     </style>
+
+    <script>
+        document.addEventListener('livewire:init', () => {
+            // Listen for new messages event
+            Livewire.on('new-messages-loaded', () => {
+                // Scroll to bottom when new messages are loaded
+                const container = document.getElementById('messages-container');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+        });
+    </script>
 </div>
