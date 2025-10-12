@@ -121,4 +121,32 @@ class User extends Authenticatable
     {
         return $this->notifications()->unread()->count();
     }
+
+    /**
+     * Get all message tags where this user was tagged
+     */
+    public function messageTags(): HasMany
+    {
+        return $this->hasMany(MessageTag::class, 'tagged_user_id');
+    }
+
+    /**
+     * Get unread message tags count
+     */
+    public function unreadMessageTagsCount(): int
+    {
+        return $this->messageTags()->where('is_read', false)->count();
+    }
+
+    /**
+     * Get recent unread message tags
+     */
+    public function recentUnreadMessageTags(): HasMany
+    {
+        return $this->messageTags()
+                    ->where('is_read', false)
+                    ->with(['message.chat', 'taggedByUser'])
+                    ->orderByDesc('created_at')
+                    ->limit(10);
+    }
 }

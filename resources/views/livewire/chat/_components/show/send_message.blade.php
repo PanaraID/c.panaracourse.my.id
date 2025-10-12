@@ -3,6 +3,7 @@
 use Livewire\Volt\Component;
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\MessageTag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -24,11 +25,60 @@ new class extends Component {
     public ?int $lastMessageId = null;
 
     /**
+     * Array ID user yang akan di-tag.
+     */
+    public array $taggedUsers = [];
+
+    /**
+     * Status modal tag user.
+     */
+    public bool $showTagModal = false;
+
+    /**
      * Mount component dan set chat aktif.
      */
     public function mount(Chat $chat): void
     {
         $this->chat = $chat;
+    }
+
+    /**
+     * Buka modal untuk tag user.
+     */
+    public function openTagModal(): void
+    {
+        $this->showTagModal = true;
+    }
+
+    /**
+     * Tutup modal tag user.
+     */
+    public function closeTagModal(): void
+    {
+        $this->showTagModal = false;
+    }
+
+    /**
+     * Toggle tag user.
+     */
+    public function toggleTagUser(int $userId): void
+    {
+        if (in_array($userId, $this->taggedUsers)) {
+            $this->taggedUsers = array_values(array_filter($this->taggedUsers, fn($id) => $id !== $userId));
+        } else {
+            $this->taggedUsers[] = $userId;
+        }
+    }
+
+    /**
+     * Get chat members yang bisa di-tag.
+     */
+    public function getChatMembersProperty()
+    {
+        return $this->chat->members()
+                         ->where('users.id', '!=', Auth::id())
+                         ->select('users.id', 'users.name', 'users.email')
+                         ->get();
     }
 
     /**
@@ -77,6 +127,18 @@ new class extends Component {
             // 5️⃣ Update state
             $this->lastMessageId = $message->id;
 
+            // 5.5️⃣ Simpan tags jika ada
+            if (!empty($this->taggedUsers)) {
+                foreach ($this->taggedUsers as $userId) {
+                    MessageTag::create([
+                        'message_id' => $message->id,
+                        'tagged_user_id' => $userId,
+                        'tagged_by_user_id' => Auth::id(),
+                        'is_read' => false,
+                    ]);
+                }
+            }
+
             // 6️⃣ Dispatch events ke frontend
             $this->dispatch('new-message-sent',
                 chatTitle: $this->chat->title,
@@ -87,7 +149,8 @@ new class extends Component {
             $this->dispatch('message-sent');
 
             // 7️⃣ Reset input form
-            $this->reset('newMessage');
+            $this->reset(['newMessage', 'taggedUsers']);
+            $this->showTagModal = false;
         } catch (\Exception $e) {
             // 8️⃣ Penanganan error
             Log::error('Failed to send message', [
@@ -109,6 +172,48 @@ new class extends Component {
 
 <div
     class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4">
+
+    <!-- ======================== -->
+    <!-- 🏷️ TOMBOL TAG ORANG -->
+    <!-- ======================== -->
+    <div class="mb-3 flex items-center justify-between">
+        <button
+            type="button"
+            wire:click="openTagModal"
+            class="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium
+                   bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
+                   text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            Tag Orang
+            @if(count($taggedUsers) > 0)
+                <span class="bg-white/20 px-2 py-1 rounded-full text-xs">{{ count($taggedUsers) }}</span>
+            @endif
+        </button>
+
+        @if(count($taggedUsers) > 0)
+            <div class="flex flex-wrap gap-1">
+                @foreach($this->chatMembers as $member)
+                    @if(in_array($member->id, $taggedUsers))
+                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 
+                                   rounded-full text-xs font-medium flex items-center gap-1">
+                            {{ $member->name }}
+                            <button 
+                                type="button"
+                                wire:click="toggleTagUser({{ $member->id }})"
+                                class="text-blue-600 hover:text-blue-800 ml-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </span>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+    </div>
 
     <form wire:submit="sendMessage" class="flex items-end gap-4">
 
@@ -180,6 +285,87 @@ new class extends Component {
             {{ $message }}
         </div>
     @enderror
+
+    <!-- ======================== -->
+    <!-- 🏷️ MODAL TAG ORANG -->
+    <!-- ======================== -->
+    @if($showTagModal)
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+             wire:click="closeTagModal">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-hidden"
+                 wire:click.stop>
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Tag Peserta</h3>
+                        <button wire:click="closeTagModal" 
+                                class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6 max-h-96 overflow-y-auto">
+                    @if($this->chatMembers->count() > 0)
+                        <div class="space-y-3">
+                            @foreach($this->chatMembers as $member)
+                                <div class="flex items-center justify-between p-3 rounded-xl 
+                                          {{ in_array($member->id, $taggedUsers) ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600' : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600' }} 
+                                          transition-all duration-200 cursor-pointer"
+                                     wire:click="toggleTagUser({{ $member->id }})">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-600 
+                                                  rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                            {{ \Str::limit($member->name, 2, '') }}
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-gray-900 dark:text-white">{{ $member->name }}</div>
+                                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ $member->email }}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center">
+                                        @if(in_array($member->id, $taggedUsers))
+                                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        @else
+                                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" stroke-width="2" />
+                                            </svg>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2m5-8a3 3 0 110-6 3 3 0 010 6m5 3a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <p class="text-gray-500 dark:text-gray-400">Tidak ada peserta lain di chat ini</p>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">
+                            {{ count($taggedUsers) }} peserta dipilih
+                        </span>
+                        <button wire:click="closeTagModal"
+                                class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 
+                                       hover:from-emerald-600 hover:to-green-700 text-white 
+                                       rounded-xl font-medium transition-all duration-300 hover:scale-105">
+                            Selesai
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- ======================== -->
     <!-- 🧠 SCRIPT -->

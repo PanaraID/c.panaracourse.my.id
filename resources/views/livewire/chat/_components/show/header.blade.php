@@ -1,18 +1,50 @@
  <?php
  
- use Livewire\Volt\Component;
- use App\Models\Chat;
- 
- new class extends Component {
-     public $chat;
- 
-     public function mount(Chat $chat)
-     {
-         $this->chat = $chat;
-     }
- };
- 
- ?>
+use Livewire\Volt\Component;
+use App\Models\Chat;
+use Illuminate\Support\Facades\Auth;
+
+new class extends Component {
+    public $chat;
+    public bool $showTagsModal = false;
+
+    public function mount(Chat $chat)
+    {
+        $this->chat = $chat;
+    }
+
+    public function openTagsModal()
+    {
+        $this->showTagsModal = true;
+    }
+
+    public function closeTagsModal()
+    {
+        $this->showTagsModal = false;
+    }
+
+    public function markTagAsRead($tagId)
+    {
+        $tag = Auth::user()->messageTags()->find($tagId);
+        if ($tag) {
+            $tag->update(['is_read' => true]);
+        }
+    }
+
+    public function getUnreadTagsProperty()
+    {
+        return Auth::user()->messageTags()
+                          ->where('is_read', false)
+                          ->whereHas('message', function($query) {
+                              $query->where('chat_id', $this->chat->id);
+                          })
+                          ->with(['message', 'taggedByUser'])
+                          ->orderByDesc('created_at')
+                          ->get();
+    }
+};
+
+?>
 
  <div
      class="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 dark:from-emerald-700 dark:via-green-700 dark:to-teal-700 px-6 py-4 shadow-lg backdrop-blur-sm">
@@ -60,6 +92,21 @@
 
          <!-- Header Actions -->
          <div class="flex items-center space-x-1">
+             <!-- Tag Notifications Button -->
+             @if($this->unreadTags->count() > 0)
+                 <button 
+                     wire:click="openTagsModal"
+                     class="relative text-white hover:bg-white/20 rounded-full p-2.5 transition-all duration-300 hover:scale-110 group">
+                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                               d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                     </svg>
+                     <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
+                         {{ $this->unreadTags->count() }}
+                     </span>
+                 </button>
+             @endif
+
              @if (Auth::user()->hasRole('admin') || $chat->created_by === Auth::id())
                  <a href="{{ route('chat.manage', $chat->slug) }}"
                      class="text-white hover:bg-white/20 rounded-full p-2.5 transition-all duration-300 hover:scale-110 hover:rotate-12 group">
@@ -75,4 +122,124 @@
              @endif
          </div>
      </div>
+
+     <!-- ======================== -->
+     <!-- 🏷️ MODAL DAFTAR TAG -->
+     <!-- ======================== -->
+     @if($showTagsModal)
+         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              wire:click="closeTagsModal">
+             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+                  wire:click.stop>
+                 <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                     <div class="flex items-center justify-between">
+                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                       d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                             </svg>
+                             Tag Anda ({{ $this->unreadTags->count() }})
+                         </h3>
+                         <button wire:click="closeTagsModal" 
+                                 class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                             </svg>
+                         </button>
+                     </div>
+                 </div>
+                 
+                 <div class="p-6 max-h-96 overflow-y-auto">
+                     @if($this->unreadTags->count() > 0)
+                         <div class="space-y-4">
+                             @foreach($this->unreadTags as $tag)
+                                 <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 border-l-4 border-blue-500">
+                                     <div class="flex items-start justify-between">
+                                         <div class="flex-1">
+                                             <div class="flex items-center gap-2 mb-2">
+                                                 <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-600 
+                                                           rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                                                     {{ \Str::limit($tag->taggedByUser->name, 2, '') }}
+                                                 </div>
+                                                 <div>
+                                                     <span class="font-medium text-gray-900 dark:text-white">{{ $tag->taggedByUser->name }}</span>
+                                                     <span class="text-sm text-gray-500 dark:text-gray-400">menandai Anda</span>
+                                                 </div>
+                                             </div>
+                                             
+                                             <div class="bg-white dark:bg-gray-600 rounded-lg p-3 mb-3">
+                                                 <p class="text-gray-800 dark:text-gray-200 text-sm">
+                                                     {{ \Str::limit($tag->message->content, 150) }}
+                                                 </p>
+                                             </div>
+                                             
+                                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                                 {{ $tag->created_at->diffForHumans() }}
+                                             </div>
+
+                                             <div class="flex gap-2">
+                                                 <button 
+                                                     wire:click="markTagAsRead({{ $tag->id }})"
+                                                     class="px-3 py-1 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 
+                                                            text-blue-800 dark:text-blue-300 rounded-lg text-xs font-medium transition-colors">
+                                                     Tandai Dibaca
+                                                 </button>
+                                                 
+                                                 <button 
+                                                     onclick="scrollToMessage({{ $tag->message->id }})"
+                                                     wire:click="closeTagsModal"
+                                                     class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/40 
+                                                            text-emerald-800 dark:text-emerald-300 rounded-lg text-xs font-medium transition-colors">
+                                                     Lihat Pesan
+                                                 </button>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                             @endforeach
+                         </div>
+                     @else
+                         <div class="text-center py-12">
+                             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                       d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                             </svg>
+                             <p class="text-gray-500 dark:text-gray-400 text-lg">Tidak ada tag baru</p>
+                             <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">Anda belum ditandai dalam chat ini</p>
+                         </div>
+                     @endif
+                 </div>
+             </div>
+         </div>
+     @endif
+
+
+ <script>
+     function scrollToMessage(messageId) {
+         // Scroll to specific message (implement based on your message display structure)
+         const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+         if (messageElement) {
+             messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+             messageElement.classList.add('highlight-message');
+             setTimeout(() => {
+                 messageElement.classList.remove('highlight-message');
+             }, 3000);
+         }
+     }
+ </script>
+
+ <style>
+     .highlight-message {
+         background-color: rgba(59, 130, 246, 0.1);
+         border: 2px solid rgba(59, 130, 246, 0.3);
+         border-radius: 12px;
+         animation: highlight-pulse 2s ease-in-out;
+     }
+
+     @keyframes highlight-pulse {
+         0%, 100% { opacity: 1; }
+         50% { opacity: 0.7; }
+     }
+ </style>
+
  </div>

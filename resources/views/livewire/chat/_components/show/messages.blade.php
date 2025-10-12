@@ -66,7 +66,9 @@ new class extends Component {
     public function loadMessages()
     {
         try {
-            return Message::where('chat_id', $this->chat->id)->with('user')->get();
+            return Message::where('chat_id', $this->chat->id)
+                          ->with(['user', 'taggedUsers'])
+                          ->get();
         } catch (\Exception $e) {
             Log::error('Error loading messages', [
                 'chat_id' => $this->chat->id,

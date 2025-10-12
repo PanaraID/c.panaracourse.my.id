@@ -15,7 +15,7 @@ new class extends Component {
     {
         $user = Auth::user();
 
-        $this->message = $message;
+        $this->message = $message->load('taggedUsers'); // Load tagged users
         $this->isOwnMessage = $isOwnMessage;
         $this->isReaded = $user->hasReadMessage($message);
 
@@ -44,8 +44,9 @@ new class extends Component {
 ?>
 
 {{-- Message Bubble Wrapper --}}
-<div data-is-readed="{{ $isReaded ? 'true' : 'false' }}"
-    class="flex mb-4 animate-slide-in-{{ $isOwnMessage ? 'right' : 'left' }} {{ $isOwnMessage ? 'justify-end' : 'justify-start' }}">
+<div data-is-readed="{{ $isReaded ? 'true' : 'false' }}" 
+     data-message-id="{{ $message->id }}"
+    class="flex mb-4 animate-slide-in-{{ $isOwnMessage ? 'right' : 'left' }} {{ $isOwnMessage ? 'justify-end' : 'justify-start' }}">>
     <div class="max-w-[85%] sm:max-w-[70%] group">
         <div
             class="
@@ -78,6 +79,35 @@ new class extends Component {
                 {{-- Tampilkan konten yang sudah di-parse dan di-sanitize --}}
                 {!! $parsedContent !!} 
             </div>
+
+            {{-- Tagged Users Info --}}
+            @if($message->taggedUsers->count() > 0)
+                <div class="mt-2 pt-2 border-t {{ $isOwnMessage ? 'border-white/20' : 'border-gray-200 dark:border-gray-600' }}">
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <svg class="w-3 h-3 {{ $isOwnMessage ? 'text-white/70' : 'text-blue-500 dark:text-blue-400' }}" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span class="text-xs {{ $isOwnMessage ? 'text-white/70' : 'text-gray-500 dark:text-gray-400' }}">
+                            Menandai:
+                        </span>
+                        @foreach($message->taggedUsers as $taggedUser)
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                        {{ $isOwnMessage 
+                                           ? 'bg-white/20 text-white' 
+                                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' }}">
+                                @if($taggedUser->id === Auth::id())
+                                    <span class="w-2 h-2 bg-red-500 rounded-full mr-1 animate-pulse"></span>
+                                    Anda
+                                @else
+                                    {{ $taggedUser->name }}
+                                @endif
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             {{-- Timestamp and Status --}}
             <div
