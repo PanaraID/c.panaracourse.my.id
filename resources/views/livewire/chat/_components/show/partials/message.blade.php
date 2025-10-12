@@ -46,7 +46,7 @@ new class extends Component {
 {{-- Message Bubble Wrapper --}}
 <div data-is-readed="{{ $isReaded ? 'true' : 'false' }}" 
      data-message-id="{{ $message->id }}"
-    class="flex mb-4 animate-slide-in-{{ $isOwnMessage ? 'right' : 'left' }} {{ $isOwnMessage ? 'justify-end' : 'justify-start' }}">>
+    class="flex mb-4 animate-slide-in-{{ $isOwnMessage ? 'right' : 'left' }} {{ $isOwnMessage ? 'justify-end' : 'justify-start' }}">
     <div class="max-w-[85%] sm:max-w-[70%] group">
         <div
             class="
