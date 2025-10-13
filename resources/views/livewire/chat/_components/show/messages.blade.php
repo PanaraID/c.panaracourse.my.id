@@ -13,6 +13,8 @@ new class extends Component {
     public $isRefreshing = false;
     public $messagesCache = null;
     public $lastRefreshTime = null;
+    public $showNewMessageNotification = false;
+    public $isUserAtBottom = true;
 
     /**
      * Mount component and initialize state
@@ -202,6 +204,12 @@ new class extends Component {
                 $this->lastMessageId = $latestMessage->id;
                 $this->messagesCache = $this->loadMessages();
                 $this->markChatNotificationsAsRead();
+                
+                // Show notification if user is not at bottom
+                if (!$this->isUserAtBottom) {
+                    $this->showNewMessageNotification = true;
+                }
+                
                 $this->dispatch('new-messages-loaded');
             }
         } catch (\Exception $e) {
@@ -223,12 +231,52 @@ new class extends Component {
     {
         return $latestMessage && $latestMessage->id > $this->lastMessageId;
     }
+
+    /**
+     * Hide new message notification
+     */
+    public function hideNewMessageNotification(): void
+    {
+        $this->showNewMessageNotification = false;
+    }
+
+    /**
+     * Set user scroll position status
+     */
+    public function setUserAtBottom($isAtBottom): void
+    {
+        $this->isUserAtBottom = $isAtBottom;
+        
+        // Hide notification if user scrolled to bottom
+        if ($isAtBottom) {
+            $this->showNewMessageNotification = false;
+        }
+    }
 };
 
 ?>
 
 <div class="space-y-6 chat-background" wire:poll.3s="refreshMessages" id="messages-container"
     wire:key="chat-container-{{ $chat->id }}">
+    
+    {{-- New Message Notification Banner --}}
+    @if($showNewMessageNotification)
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce-in" 
+             wire:key="new-message-notification-{{ $chat->id }}">
+            <div class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-3 cursor-pointer transition-all duration-200"
+                 onclick="scrollToBottom(); @this.hideNewMessageNotification()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+                <span class="font-medium">Ada pesan baru • Scroll ke bawah</span>
+                <button class="text-white hover:text-gray-200 ml-2" onclick="event.stopPropagation(); @this.hideNewMessageNotification()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    @endif
     @php $prevDate = null; @endphp
 
     @forelse ($this->messages as $message)
@@ -361,6 +409,21 @@ new class extends Component {
             }
         }
 
+        @keyframes bounce-in {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 20px) scale(0.8);
+            }
+            60% {
+                opacity: 1;
+                transform: translate(-50%, -5px) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+            }
+        }
+
         @keyframes pulse-slow {
 
             0%,
@@ -392,6 +455,10 @@ new class extends Component {
 
         .animate-pulse-slow {
             animation: pulse-slow 2s ease-in-out infinite;
+        }
+
+        .animate-bounce-in {
+            animation: bounce-in 0.4s ease-out forwards;
         }
 
         /* ==================== Message Bubble Effects ==================== */
@@ -456,10 +523,63 @@ new class extends Component {
             let isScrolling = false;
 
             /**
+             * Function to scroll to bottom of messages container
+             */
+            window.scrollToBottom = function() {
+                const container = document.getElementById('messages-container');
+                if (container) {
+                    container.scrollTo({
+                        top: container.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            };
+
+            /**
+             * Check if user is at bottom of messages container
+             */
+            function isUserAtBottom() {
+                const container = document.getElementById('messages-container');
+                if (!container) return true;
+                
+                const threshold = 50; // pixels from bottom
+                return (container.scrollTop + container.clientHeight >= container.scrollHeight - threshold);
+            }
+
+            /**
+             * Update user scroll position in Livewire component
+             */
+            function updateScrollPosition() {
+                const atBottom = isUserAtBottom();
+                @this.setUserAtBottom(atBottom);
+            }
+
+            /**
+             * Handle scroll events on messages container
+             */
+            const container = document.getElementById('messages-container');
+            if (container) {
+                container.addEventListener('scroll', function() {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        updateScrollPosition();
+                    }, 100);
+                });
+
+                // Initial scroll position check
+                updateScrollPosition();
+            }
+
+            /**
              * Handle new messages loaded event
              */
             Livewire.on('new-messages-loaded', () => {
-                // TODO
+                // Auto-scroll if user was at bottom
+                setTimeout(() => {
+                    if (isUserAtBottom()) {
+                        scrollToBottom();
+                    }
+                }, 100);
             });
 
             /**
@@ -490,35 +610,27 @@ new class extends Component {
             });
         });
 
-        const container = document.getElementById('messages-container');
+        // Initial scroll setup when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const container = document.getElementById('messages-container');
+                if (container) {
+                    // Find the first unread message
+                    const firstUnreadElement = container.querySelector('[data-is-readed="false"]');
 
-        if (container) {
-            // Find the first unread message
-            const firstUnreadElement = container.querySelector(
-                '[data-is-readed="false"]');
-
-            scrollTimeout = setTimeout(() => {
-                if (firstUnreadElement) {
-                    // Scroll to the first unread message
-                    firstUnreadElement.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                } else {
-                    // No unread messages, scroll to bottom
-                    container.scrollTo({
-                        top: container.scrollHeight,
-                        behavior: 'smooth'
-                    });
+                    if (firstUnreadElement) {
+                        // Scroll to the first unread message
+                        firstUnreadElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    } else {
+                        // No unread messages, scroll to bottom
+                        scrollToBottom();
+                    }
                 }
-
-                setTimeout(() => {
-                    isScrolling = false;
-                }, 500);
-            }, 100);
-        } else {
-            isScrolling = false;
-        }
+            }, 200);
+        });
 
         /**
          * Handle page visibility changes to optimize polling
