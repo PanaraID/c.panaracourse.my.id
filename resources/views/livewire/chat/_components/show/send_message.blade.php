@@ -306,7 +306,7 @@ new class extends Component {
                 <div
                     class="p-6 max-h-96 overflow-y-auto bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                     @if ($this->chatMembers->count() > 0)
-                        <div class="space-y-3">
+                        <div class="space-y-3 overflow-y-auto">
                             @foreach ($this->chatMembers as $member)
                                 <div class="flex items-center justify-between p-3 rounded-2xl
                         {{ in_array($member->id, $taggedUsers) ? 'bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-400 dark:border-emerald-600' : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-600' }}
