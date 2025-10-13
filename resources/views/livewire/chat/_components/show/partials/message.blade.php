@@ -20,10 +20,10 @@ new class extends Component {
         $this->isReaded = $user->hasReadMessage($message);
 
         // Mengonversi Markdown menjadi HTML yang aman
-        $this->parsedContent = Str::markdown($message->content);
-        if (env('APP_ENV') === 'local') {
-            logger()->debug('Parsed Content: ' . $this->parsedContent);
-        }
+        $this->parsedContent = $message->content; // Sementara hanya isi asli
+        // if (env('APP_ENV') === 'local') {
+        //     logger()->debug('Parsed Content: ' . $this->parsedContent);
+        // }
     }
 
 
@@ -71,12 +71,29 @@ new class extends Component {
                 $isNoSpace = !Str::contains($message->content, ' ');
             @endphp
             <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }} prose dark:prose-invert">
+                @php
+                    // Fungsi untuk auto-link sebagai closure
+                    $autoLinkBrother = function ($text) {
+                        $pattern = '/(https?:\/\/[^\s<]+)/i';
+                        return preg_replace_callback($pattern, function ($matches) {
+                            $url = e($matches[0]);
+                            $displayUrl = Str::limit(str_replace(['http://', 'https://'], '', $matches[0]), 40);
+                            return "<a href=\"{$url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium hover:bg-blue-100 dark:hover:bg-blue-800 transition\">
+                                <svg class=\"w-4 h-4 text-blue-500 dark:text-blue-400\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
+                                    <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M14 3h7v7m0 0L10 21l-7-7 11-11z\" />
+                                </svg>
+                                {$displayUrl}
+                            </a>";
+                        }, $text);
+                    };
+                @endphp
+
                 @if($isNoSpace)
                     {{-- Jika tidak ada spasi, pecah setiap 20 karakter dan tambahkan <br> --}}
-                    {!! implode('<br>', str_split($message->content, 20)) !!}
+                    {!! $autoLinkBrother(implode('<br>', str_split($message->content, 20))) !!}
                 @else
-                    {{-- Tampilkan konten yang sudah di-parse dan di-sanitize --}}
-                    {!! $parsedContent !!}
+                    {{-- Tampilkan konten yang sudah di-parse dan di-sanitize, lalu auto-link --}}
+                    {!! $autoLinkBrother($parsedContent) !!}
                 @endif
             </div>
 
