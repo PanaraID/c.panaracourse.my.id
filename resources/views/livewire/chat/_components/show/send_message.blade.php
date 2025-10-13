@@ -35,6 +35,11 @@ new class extends Component {
     public bool $showTagModal = false;
 
     /**
+     * Search query untuk filter peserta.
+     */
+    public string $searchQuery = '';
+
+    /**
      * Mount component dan set chat aktif.
      */
     public function mount(Chat $chat): void
@@ -56,6 +61,7 @@ new class extends Component {
     public function closeTagModal(): void
     {
         $this->showTagModal = false;
+        $this->searchQuery = ''; // Reset pencarian ketika modal ditutup
     }
 
     /**
@@ -71,11 +77,34 @@ new class extends Component {
     }
 
     /**
-     * Get chat members yang bisa di-tag.
+     * Get semua chat members tanpa filter untuk menampilkan tagged users.
+     */
+    public function getAllChatMembersProperty()
+    {
+        return $this->chat->members()
+            ->where('users.id', '!=', Auth::id())
+            ->select('users.id', 'users.name', 'users.email')
+            ->get();
+    }
+
+    /**
+     * Get chat members yang bisa di-tag (dengan filter pencarian dan limit).
      */
     public function getChatMembersProperty()
     {
-        return $this->chat->members()->where('users.id', '!=', Auth::id())->select('users.id', 'users.name', 'users.email')->get();
+        $query = $this->chat->members()
+            ->where('users.id', '!=', Auth::id())
+            ->select('users.id', 'users.name', 'users.email');
+
+        // Jika ada pencarian, filter berdasarkan nama
+        if (!empty(trim($this->searchQuery))) {
+            $query->where('users.name', 'like', '%' . trim($this->searchQuery) . '%');
+            // Jika ada pencarian, tampilkan semua hasil
+            return $query->get();
+        }
+
+        // Jika tidak ada pencarian, batasi maksimal 3 peserta
+        return $query->limit(3)->get();
     }
 
     /**
@@ -173,12 +202,12 @@ new class extends Component {
     class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4 w-full max-w-full overflow-hidden">
 
     <!-- ======================== -->
-    <!-- 🏷️ TOMBOL TAG -->
+    <!-- 🏷️ PESERTA YANG DITAG -->
     <!-- ======================== -->
     <div class="mb-3 flex items-center justify-between">
         @if (count($taggedUsers) > 0)
             <div class="flex flex-wrap gap-1">
-                @foreach ($this->chatMembers as $member)
+                @foreach ($this->allChatMembers as $member)
                     @if (in_array($member->id, $taggedUsers))
                         <span
                             class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 
@@ -303,8 +332,40 @@ new class extends Component {
                 </button>
             </div>
 
+            <!-- 🔍 Input Pencarian -->
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" 
+                           wire:model.live.debounce.300ms="searchQuery"
+                           placeholder="Cari peserta berdasarkan nama..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 
+                                  rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 
+                                  bg-white dark:bg-gray-800 text-gray-900 dark:text-white 
+                                  placeholder-gray-500 dark:placeholder-gray-400 text-sm">
+                </div>
+            </div>
+
             <div class="p-4 max-h-72 overflow-y-auto">
                 @if ($this->chatMembers->count() > 0)
+                    <!-- Info tentang batasan jika tidak ada pencarian -->
+                    @if (empty(trim($searchQuery)) && $this->chat->members()->where('users.id', '!=', Auth::id())->count() > 3)
+                        <div class="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Menampilkan 3 peserta pertama. Gunakan pencarian untuk melihat semua peserta.</span>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="space-y-2">
                         @foreach ($this->chatMembers as $member)
                             <div class="flex items-center justify-between p-3 rounded-xl cursor-pointer
@@ -343,7 +404,17 @@ new class extends Component {
                     </div>
                 @else
                     <div class="text-center py-10 text-gray-500 dark:text-gray-400">
-                        Tidak ada peserta lain di chat ini
+                        @if (!empty(trim($searchQuery)))
+                            <div class="flex flex-col items-center gap-2">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <span>Tidak ada peserta yang ditemukan untuk "{{ $searchQuery }}"</span>
+                            </div>
+                        @else
+                            Tidak ada peserta lain di chat ini
+                        @endif
                     </div>
                 @endif
             </div>
