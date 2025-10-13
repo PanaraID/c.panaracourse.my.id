@@ -1,21 +1,21 @@
-# Real-time Notifications Implementation
+# Real-time Tag Notifications Implementation
 
 ## ✅ Features Implemented
 
-### 1. **Real-time Notification Broadcasting**
-- **Event**: `NotificationSent` - Auto-triggered saat notifikasi baru dibuat
-- **Channel**: `user.{userId}` - Private channel untuk setiap user
-- **Authorization**: User hanya bisa listen channel mereka sendiri
+### 1. **Real-time Tag Broadcasting**
+- **Event**: `new-tag-received` - Auto-triggered saat tag baru dibuat
+- **Event**: `tag-marked-as-read` - Auto-triggered saat tag dibaca
+- **Polling**: Header polling setiap 5 detik untuk tag notifications
 
 ### 2. **Auto-refresh Components**
-- **Notification Dropdown**: Polling setiap 5 detik + real-time events
-- **Notification Index Page**: Polling setiap 5 detik + real-time events  
-- **Sidebar Badge**: Polling setiap 10 detik untuk unread count
+- **Tag Badge**: Polling setiap 5 detik + real-time events
+- **Modal Tag List**: Auto-refresh saat ada perubahan
+- **Smart Optimization**: Hanya refresh jika ada perubahan count
 
 ### 3. **Visual Feedback**
-- **Animated Badge**: Pulsa merah pada notification bell
-- **Bounce Animation**: Bell icon bounce saat notifikasi baru
-- **Browser Notifications**: Desktop notifications dengan permission
+- **Animated Badge**: Pulsa merah dengan glow effect
+- **Bounce Animation**: Badge counter bounce saat tag baru
+- **Button Animation**: Tag button pulse saat ada notifikasi
 
 ### 4. **Smart Optimization**
 - **Track Last ID**: Hanya refresh jika ada notifikasi baru

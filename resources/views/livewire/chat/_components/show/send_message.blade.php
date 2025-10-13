@@ -137,6 +137,9 @@ new class extends Component {
                         'is_read' => false,
                     ]);
                 }
+                
+                // Dispatch event untuk notifikasi tag real-time
+                $this->dispatch('new-tag-received');
             }
 
             // 6️⃣ Dispatch events ke frontend

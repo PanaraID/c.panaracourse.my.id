@@ -7,10 +7,12 @@ use Illuminate\Support\Facades\Auth;
 new class extends Component {
     public $chat;
     public bool $showTagsModal = false;
+    public $lastTagCount = 0; // Track perubahan tag count
 
     public function mount(Chat $chat)
     {
         $this->chat = $chat;
+        $this->lastTagCount = $this->getUnreadTagsCount();
     }
 
     public function openTagsModal()
@@ -28,7 +30,44 @@ new class extends Component {
         $tag = Auth::user()->messageTags()->find($tagId);
         if ($tag) {
             $tag->update(['is_read' => true]);
+            // Update count dan dispatch event
+            $this->lastTagCount = $this->getUnreadTagsCount();
+            $this->dispatch('tag-marked-as-read');
         }
+    }
+
+    public function refreshTagNotifications()
+    {
+        $currentCount = $this->getUnreadTagsCount();
+        
+        // Hanya refresh jika ada perubahan
+        if ($currentCount !== $this->lastTagCount) {
+            $this->lastTagCount = $currentCount;
+            $this->dispatch('$refresh');
+            
+            // Jika ada tag baru, bisa trigger sound atau notification
+            if ($currentCount > $this->lastTagCount) {
+                $this->dispatch('new-tag-alert');
+            }
+        }
+    }
+
+    public function getListeners()
+    {
+        return [
+            'new-tag-received' => 'refreshTagNotifications',
+            'tag-marked-as-read' => '$refresh',
+        ];
+    }
+
+    private function getUnreadTagsCount()
+    {
+        return Auth::user()->messageTags()
+                          ->where('is_read', false)
+                          ->whereHas('message', function($query) {
+                              $query->where('chat_id', $this->chat->id);
+                          })
+                          ->count();
     }
 
     public function getUnreadTagsProperty()
@@ -47,7 +86,8 @@ new class extends Component {
 ?>
 
  <div
-     class="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 dark:from-emerald-700 dark:via-green-700 dark:to-teal-700 px-6 py-4 shadow-lg backdrop-blur-sm">
+     class="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 dark:from-emerald-700 dark:via-green-700 dark:to-teal-700 px-6 py-4 shadow-lg backdrop-blur-sm"
+     wire:poll.5s="refreshTagNotifications">
      <div class="flex items-center justify-between">
          <div class="flex items-center space-x-4">
              <!-- Back Button with Animation -->
@@ -96,12 +136,12 @@ new class extends Component {
              @if($this->unreadTags->count() > 0)
                  <button 
                      wire:click="openTagsModal"
-                     class="relative text-white hover:bg-white/20 rounded-full p-2.5 transition-all duration-300 hover:scale-110 group">
+                     class="relative text-white hover:bg-white/20 rounded-full p-2.5 transition-all duration-300 hover:scale-110 group animate-pulse-new-tag">
                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                      </svg>
-                     <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
+                     <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-bounce">
                          {{ $this->unreadTags->count() }}
                      </span>
                  </button>
@@ -226,6 +266,26 @@ new class extends Component {
              }, 3000);
          }
      }
+
+     // Real-time tag notifications listener
+     document.addEventListener('livewire:initialized', () => {
+         // Listen untuk event tag baru
+         Livewire.on('new-tag-received', () => {
+             // Force refresh component untuk update badge
+             @this.refreshTagNotifications();
+         });
+
+         // Listen untuk event tag dibaca
+         Livewire.on('tag-marked-as-read', () => {
+             // Component akan auto-refresh karena sudah ada listener
+         });
+     });
+
+     // Show notification toast untuk tag baru (opsional)
+     function showTagNotification(taggerName) {
+         // Bisa ditambahkan toast notification di sini
+         console.log(`${taggerName} mentioned you in a message`);
+     }
  </script>
 
  <style>
@@ -239,6 +299,41 @@ new class extends Component {
      @keyframes highlight-pulse {
          0%, 100% { opacity: 1; }
          50% { opacity: 0.7; }
+     }
+
+     .animate-pulse-new-tag {
+         animation: pulse-new-tag 2s infinite;
+     }
+
+     @keyframes pulse-new-tag {
+         0%, 100% {
+             transform: scale(1);
+             box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+         }
+         50% {
+             transform: scale(1.05);
+             box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+         }
+     }
+
+     /* Bounce animation untuk badge counter */
+     .animate-bounce {
+         animation: bounce 1s infinite;
+     }
+
+     @keyframes bounce {
+         0%, 20%, 53%, 80%, 100% {
+             transform: translate3d(0, 0, 0);
+         }
+         40%, 43% {
+             transform: translate3d(0, -8px, 0);
+         }
+         70% {
+             transform: translate3d(0, -4px, 0);
+         }
+         90% {
+             transform: translate3d(0, -2px, 0);
+         }
      }
  </style>
 
