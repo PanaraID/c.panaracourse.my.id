@@ -229,7 +229,10 @@ new class extends Component {
      */
     private function hasNewMessages($latestMessage): bool
     {
-        return $latestMessage && $latestMessage->id > $this->lastMessageId;
+        // Only consider new messages that are NOT sent by the current user
+        return $latestMessage
+            && $latestMessage->id > $this->lastMessageId
+            && $latestMessage->user_id !== Auth::id();
     }
 
     /**

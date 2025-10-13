@@ -20,19 +20,10 @@ new class extends Component {
         $this->isReaded = $user->hasReadMessage($message);
 
         // Mengonversi Markdown menjadi HTML yang aman
-        $this->parsedContent = Str::markdown($message->content, [
-            // Konfigurasi untuk menghilangkan HTML mentah (mencegah XSS dan tombol)
-            'html_input' => 'strip', 
-            // Menonaktifkan tautan yang dianggap berbahaya
-            'allow_unsafe_links' => false, 
-            
-            // Konfigurasi CommonMark untuk mendukung format dasar (seperti WhatsApp)
-            'commonmark' => [
-                'enable_em' => true,     // *teks* atau _teks_
-                'enable_strong' => true, // **teks** atau __teks__
-            ],
-            // Anda dapat mengatur 'extensions' untuk membatasi fitur (misalnya, menghapus TableExtension)
-        ]);
+        $this->parsedContent = Str::markdown($message->content);
+        if (env('APP_ENV') === 'local') {
+            logger()->debug('Parsed Content: ' . $this->parsedContent);
+        }
     }
 
 

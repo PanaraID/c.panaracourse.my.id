@@ -227,7 +227,7 @@ new class extends Component {
         @endif
     </div>
 
-    <section class="w-full overflow-x-auto">
+    <section class="w-full">
         <form wire:submit="sendMessage" class="flex items-end gap-3 min-w-0">
             <!-- 📝 Input Pesan -->
             <div class="flex-1 relative flex items-center gap-2 min-w-0">
