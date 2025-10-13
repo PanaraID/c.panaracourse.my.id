@@ -233,22 +233,48 @@ new class extends Component {
             <div class="flex-1 relative flex items-center gap-2 min-w-0">
                 <div id="message-input-{{ $chat->id }}" wire:ignore contenteditable="true"
                     data-placeholder="Ketik pesan..."
-                    class="w-full max-h-36 overflow-y-auto px-6 py-4
+                    class="w-full max-h-24 overflow-y-auto px-3 py-2
                         bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 
                         dark:from-gray-800 dark:via-gray-900 dark:to-gray-700
-                        rounded-3xl text-gray-900 dark:text-gray-100 text-[15px]
-                        shadow-lg ring-1 ring-gray-200 dark:ring-gray-700
-                        border-2 border-transparent focus:border-emerald-500
-                        focus:ring-4 focus:ring-emerald-500/20 focus:outline-none
-                        transition-all duration-300 transform-gpu
+                        text-gray-900 dark:text-gray-100 text-sm
+                        shadow ring-1 ring-gray-200 dark:ring-gray-700
+                        border border-transparent focus:border-emerald-500
+                        focus:ring-2 focus:ring-emerald-500/20 focus:outline-none
+                        transition-all duration-200
                         placeholder:text-gray-400 dark:placeholder:text-gray-500
                         break-words overflow-wrap-anywhere
-                        @error('newMessage') border-red-500 ring-4 ring-red-500/20 dark:bg-red-900/10 @enderror"
-                    style="min-height: 52px; line-height: 1.6; word-break: break-word; overflow-wrap: break-word;"
+                        scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-gray-100 dark:scrollbar-thumb-emerald-700 dark:scrollbar-track-gray-900
+                        hover:scrollbar-thumb-emerald-400
+                        @error('newMessage') border-red-500 ring-2 ring-red-500/20 dark:bg-red-900/10 @enderror"
+                    style="min-height: 36px; line-height: 1.5; word-break: break-word; overflow-wrap: break-word;"
                     x-data="{}"
                     x-init="$nextTick(() => window.initializeMessageInput($el, '{{ $chat->id }}'))"></div>
                 <input type="hidden" wire:model="newMessage" id="hidden-message-{{ $chat->id }}">
             </div>
+            <style>
+                /* Custom scrollbar for message input */
+                #message-input-{{ $chat->id }}::-webkit-scrollbar {
+                    height: 8px;
+                    width: 8px;
+                    background: transparent;
+                }
+                #message-input-{{ $chat->id }}::-webkit-scrollbar-thumb {
+                    background: linear-gradient(90deg, #34d399 40%, #818cf8 100%);
+                    border-radius: 8px;
+                }
+                #message-input-{{ $chat->id }}::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                /* Firefox */
+                #message-input-{{ $chat->id }} {
+                    scrollbar-width: thin;
+                    scrollbar-color: #34d399 #f3f4f6;
+                }
+                /* Hide scrollbar when not needed */
+                #message-input-{{ $chat->id }}:not(:hover):not(:focus)::-webkit-scrollbar-thumb {
+                    background: #e5e7eb;
+                }
+            </style>
 
             {{-- Actions --}}
             <section class="flex items-center gap-2">
