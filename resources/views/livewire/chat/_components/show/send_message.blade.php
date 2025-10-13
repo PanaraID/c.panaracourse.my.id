@@ -278,101 +278,86 @@ new class extends Component {
     @enderror
 
     <!-- ======================== -->
-    <!-- 🏷️ MODAL TAG -->
+    <!-- 🏷️ PANEL TAG (Gabung di bawah input chat) -->
     <!-- ======================== -->
     @if ($showTagModal)
-        <div class="fixed inset-0 bg-gradient-to-br from-black/60 via-gray-900/70 to-black/60 backdrop-blur-lg z-50 flex items-center justify-center p-4"
-            wire:click="closeTagModal">
-            <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[75vh] overflow-hidden ring-2 ring-emerald-400/10"
-                wire:click.stop>
-                <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                        <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                        Tag Peserta
-                    </h3>
-                    <button wire:click="closeTagModal"
-                        class="rounded-full p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+        <div
+            class="mt-4 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full overflow-hidden border border-emerald-300/40">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    Tag Peserta
+                </h3>
+                <button wire:click="closeTagModal"
+                    class="rounded-full p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
 
-                <div
-                    class="p-6 max-h-96 overflow-y-auto bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-                    @if ($this->chatMembers->count() > 0)
-                        <div class="space-y-3 overflow-y-auto">
-                            @foreach ($this->chatMembers as $member)
-                                <div class="flex items-center justify-between p-3 rounded-2xl
-                        {{ in_array($member->id, $taggedUsers) ? 'bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-400 dark:border-emerald-600' : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-600' }}
-                        transition-all duration-200 cursor-pointer group"
-                                    wire:click="toggleTagUser({{ $member->id }})">
-                                    <div class="flex items-center space-x-3">
-                                        <div
-                                            class="w-11 h-11 bg-gradient-to-br from-emerald-500 to-blue-600
-                                rounded-full flex items-center justify-center text-white font-bold text-base shadow-lg">
-                                            {{ \Str::limit($member->name, 2, '') }}
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 dark:text-white">
-                                                {{ $member->name }}</div>
-                                        </div>
+            <div class="p-4 max-h-72 overflow-y-auto">
+                @if ($this->chatMembers->count() > 0)
+                    <div class="space-y-2">
+                        @foreach ($this->chatMembers as $member)
+                            <div class="flex items-center justify-between p-3 rounded-xl cursor-pointer
+                                transition-all duration-200
+                                {{ in_array($member->id, $taggedUsers)
+                                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-400 dark:border-emerald-700'
+                                    : 'bg-gray-50 dark:bg-gray-800 border border-transparent hover:border-emerald-400/50' }}"
+                                wire:click="toggleTagUser({{ $member->id }})">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-blue-600
+                                        rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                                        {{ Str::limit($member->name, 2, '') }}
                                     </div>
-                                    <div class="flex items-center">
-                                        @if (in_array($member->id, $taggedUsers))
-                                            <svg class="w-6 h-6 text-emerald-500 drop-shadow" fill="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        @else
-                                            <svg class="w-6 h-6 text-gray-300 group-hover:text-emerald-400 transition-colors"
-                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <circle cx="12" cy="12" r="10" stroke-width="2" />
-                                            </svg>
-                                        @endif
+                                    <div>
+                                        <div class="font-semibold text-gray-900 dark:text-white">
+                                            {{ $member->name }}
+                                        </div>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-10">
-                            <svg class="w-14 h-14 text-gray-300 dark:text-gray-700 mx-auto mb-4" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2m5-8a3 3 0 110-6 3 3 0 010 6m5 3a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            <p class="text-gray-500 dark:text-gray-400 font-medium">Tidak ada peserta lain di chat ini
-                            </p>
-                        </div>
-                    @endif
-                </div>
 
-                <div
-                    class="p-6 border-t border-gray-200 dark:border-gray-800 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                            <svg class="w-4 h-4 inline-block mr-1 text-emerald-500" fill="currentColor"
-                                viewBox="0 0 20 20">
-                                <circle cx="10" cy="10" r="10" />
-                            </svg>
-                            {{ count($taggedUsers) }} peserta dipilih
-                        </span>
-                        <button wire:click="closeTagModal"
-                            class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600
-                           hover:from-emerald-600 hover:to-green-700 text-white
-                           rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            Selesai
-                        </button>
+                                <div>
+                                    @if (in_array($member->id, $taggedUsers))
+                                        <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10" stroke-width="2" />
+                                        </svg>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
-                </div>
+                @else
+                    <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                        Tidak ada peserta lain di chat ini
+                    </div>
+                @endif
+            </div>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                <span class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ count($taggedUsers) }} peserta dipilih
+                </span>
+                <button wire:click="closeTagModal"
+                    class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg font-semibold shadow-md hover:scale-105 transition-all duration-200">
+                    Selesai
+                </button>
             </div>
         </div>
     @endif
+
 
     <!-- ======================== -->
     <!-- 🧠 SCRIPT -->
