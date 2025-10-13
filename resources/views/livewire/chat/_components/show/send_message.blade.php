@@ -170,7 +170,7 @@ new class extends Component {
 <!-- ======================== -->
 
 <div
-    class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4">
+    class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4 w-full max-w-full overflow-hidden">
 
     <!-- ======================== -->
     <!-- 🏷️ TOMBOL TAG -->
@@ -198,14 +198,14 @@ new class extends Component {
         @endif
     </div>
 
-    <section class="overflow-x-auto">
-        <form wire:submit="sendMessage" class="flex items-end gap-3">
+    <section class="w-full overflow-x-auto">
+        <form wire:submit="sendMessage" class="flex items-end gap-3 min-w-0">
             <!-- 📝 Input Pesan -->
-            <div class="flex-1 relative flex items-center gap-2">
+            <div class="flex-1 relative flex items-center gap-2 min-w-0">
                 <div id="message-input-{{ $chat->id }}" wire:ignore contenteditable="true"
                     data-placeholder="Ketik pesan..."
                     class="w-full max-h-36 overflow-y-auto px-6 py-4
-                        bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 overflow-x-auto
+                        bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 
                         dark:from-gray-800 dark:via-gray-900 dark:to-gray-700
                         rounded-3xl text-gray-900 dark:text-gray-100 text-[15px]
                         shadow-lg ring-1 ring-gray-200 dark:ring-gray-700
@@ -213,22 +213,24 @@ new class extends Component {
                         focus:ring-4 focus:ring-emerald-500/20 focus:outline-none
                         transition-all duration-300 transform-gpu
                         placeholder:text-gray-400 dark:placeholder:text-gray-500
+                        break-words overflow-wrap-anywhere
                         @error('newMessage') border-red-500 ring-4 ring-red-500/20 dark:bg-red-900/10 @enderror"
-                    style="min-height: 52px; line-height: 1.6;"
+                    style="min-height: 52px; line-height: 1.6; word-break: break-word; overflow-wrap: break-word;"
                     x-data="{}"
                     x-init="$nextTick(() => window.initializeMessageInput($el, '{{ $chat->id }}'))"></div>
                 <input type="hidden" wire:model="newMessage" id="hidden-message-{{ $chat->id }}">
 
                 <!-- 🏷️ Tombol Tag -->
                 <button type="button" wire:click="openTagModal"
-                    class="flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium
+                    class="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-2xl text-sm font-medium
                         bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
-                        text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400
+                        flex-shrink-0 whitespace-nowrap">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
-                    <span>Tag</span>
+                    <span class="hidden sm:inline">Tag</span>
                     @if (count($taggedUsers) > 0)
                         <span
                             class="bg-white/30 px-2 py-1 rounded-full text-xs font-semibold shadow text-blue-900 dark:text-blue-200 ml-1">
@@ -453,6 +455,36 @@ new class extends Component {
         .dark [contenteditable]:empty:before,
         .dark [contenteditable].empty:before {
             color: #6b7280;
+        }
+
+        /* Responsive layout untuk form input */
+        @media (max-width: 640px) {
+            /* Pada mobile, pastikan form tidak overflow */
+            form {
+                width: 100%;
+                min-width: 0;
+            }
+            
+            /* Input container harus fleksibel */
+            .flex-1 {
+                min-width: 0;
+                flex: 1 1 0%;
+            }
+            
+            /* Input pesan responsive */
+            [contenteditable] {
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                white-space: pre-wrap;
+                width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
+            }
+            
+            /* Tombol tag lebih kecil di mobile */
+            .flex-shrink-0 {
+                flex-shrink: 0;
+            }
         }
     </style>
 </div>
