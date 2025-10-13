@@ -138,6 +138,8 @@ new class extends Component {
         // 3️⃣ Simpan pesan
         $content = $this->newMessage;
 
+        $content = str_replace(["\r\n", "\r", "\n"], '<br>', $content);
+
         try {
             $message = Message::create([
                 'chat_id' => $this->chat->id,
