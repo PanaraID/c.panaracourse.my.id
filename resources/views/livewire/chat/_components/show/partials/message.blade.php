@@ -20,10 +20,10 @@ new class extends Component {
         $this->isReaded = $user->hasReadMessage($message);
 
         // Mengonversi Markdown menjadi HTML yang aman
-        $this->parsedContent = $message->content; // Sementara hanya isi asli
-        // if (env('APP_ENV') === 'local') {
-        //     logger()->debug('Parsed Content: ' . $this->parsedContent);
-        // }
+        $this->parsedContent = Str::markdown($message->content);
+        if (env('APP_ENV') === 'local') {
+            logger()->debug('Parsed Content: ' . $this->parsedContent);
+        }
     }
 
 

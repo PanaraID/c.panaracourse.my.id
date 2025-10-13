@@ -10,6 +10,11 @@ use Illuminate\Support\Str;
 
 new class extends Component {
     /**
+     * Component name for debugging
+     */
+    public string $componentName = 'send_message';
+    
+    /**
      * Chat yang sedang aktif.
      */
     public Chat $chat;
@@ -81,10 +86,7 @@ new class extends Component {
      */
     public function getAllChatMembersProperty()
     {
-        return $this->chat->members()
-            ->where('users.id', '!=', Auth::id())
-            ->select('users.id', 'users.name', 'users.email')
-            ->get();
+        return $this->chat->members()->where('users.id', '!=', Auth::id())->select('users.id', 'users.name', 'users.email')->get();
     }
 
     /**
@@ -92,9 +94,7 @@ new class extends Component {
      */
     public function getChatMembersProperty()
     {
-        $query = $this->chat->members()
-            ->where('users.id', '!=', Auth::id())
-            ->select('users.id', 'users.name', 'users.email');
+        $query = $this->chat->members()->where('users.id', '!=', Auth::id())->select('users.id', 'users.name', 'users.email');
 
         // Jika ada pencarian, filter berdasarkan nama
         if (!empty(trim($this->searchQuery))) {
@@ -168,7 +168,7 @@ new class extends Component {
                         'is_read' => false,
                     ]);
                 }
-                
+
                 // Dispatch event untuk notifikasi tag real-time
                 $this->dispatch('new-tag-received');
             }
@@ -200,8 +200,10 @@ new class extends Component {
 <!-- 💬 FORM INPUT PESAN -->
 <!-- ======================== -->
 
-<div
-    class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4 w-full max-w-full overflow-hidden">
+<div class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4 w-full max-w-full overflow-hidden"
+    wire:key="send-message-container-{{ $chat->id }}"
+    data-component="send-message"
+    data-chat-id="{{ $chat->id }}">
 
     <!-- ======================== -->
     <!-- 🏷️ PESERTA YANG DITAG -->
@@ -230,12 +232,20 @@ new class extends Component {
     </div>
 
     <section class="w-full">
-        <form wire:submit="sendMessage" class="flex items-end gap-3 min-w-0">
-            <!-- 📝 Input Pesan -->
-            <div class="flex-1 relative flex items-center gap-2 min-w-0">
-                <div id="message-input-{{ $chat->id }}" wire:ignore contenteditable="true"
-                    data-placeholder="Ketik pesan..."
-                    class="w-full max-h-24 overflow-y-auto px-3 py-2
+        <form action="" class="flex items-end gap-3 min-w-0"
+            wire:key="send-message-form-{{ $chat->id }}"
+            id="send-message-form-{{ $chat->id }}"
+            data-livewire-component="send_message"
+            x-data="{
+                submitForm() {
+                    $wire.sendMessage();
+                }
+            }"
+            @submit.prevent="submitForm()">
+            <!-- 📝 Input Pesan - PLAIN TEXT TEXTAREA -->
+            <div class="flex relative items-center min-w-0">
+                <textarea wire:model="newMessage" id="message-input-{{ $chat->id }}" placeholder="Ketik pesan..." rows="1"
+                    class="w-full max-h-24 overflow-y-auto px-3 py-2 resize-none
                         bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 
                         dark:from-gray-800 dark:via-gray-900 dark:to-gray-700
                         text-gray-900 dark:text-gray-100 text-sm
@@ -244,14 +254,61 @@ new class extends Component {
                         focus:ring-2 focus:ring-emerald-500/20 focus:outline-none
                         transition-all duration-200
                         placeholder:text-gray-400 dark:placeholder:text-gray-500
-                        break-words overflow-wrap-anywhere
                         scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-gray-100 dark:scrollbar-thumb-emerald-700 dark:scrollbar-track-gray-900
                         hover:scrollbar-thumb-emerald-400
                         @error('newMessage') border-red-500 ring-2 ring-red-500/20 dark:bg-red-900/10 @enderror"
-                    style="min-height: 36px; line-height: 1.5; word-break: break-word; overflow-wrap: break-word;"
-                    x-data="{}"
-                    x-init="$nextTick(() => window.initializeMessageInput($el, '{{ $chat->id }}'))"></div>
-                <input type="hidden" wire:model="newMessage" id="hidden-message-{{ $chat->id }}">
+                    style="min-height: 40px; line-height: 1.5;" x-data="{}" x-init="$nextTick(() => window.autoResizeTextarea($el))"></textarea>
+
+                {{-- Actions --}}
+                <section class="ml-2 flex items-center gap-2">
+                    <!-- 🏷️ Tombol Tag -->
+                    <button type="button" wire:click="openTagModal"
+                        class="flex items-center gap-1 px-1.5 py-1 rounded-xl text-xs font-medium
+                        bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
+                        text-white shadow hover:shadow-md transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400
+                        flex-shrink-0 whitespace-nowrap">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span class="hidden sm:inline">Tag</span>
+                        @if (count($taggedUsers) > 0)
+                            <span
+                                class="bg-white/30 px-1 py-0.5 rounded-full text-[10px] font-semibold shadow text-blue-900 dark:text-blue-200 ml-1">
+                                {{ count($taggedUsers) }}
+                            </span>
+                        @endif
+                    </button>
+                    <!-- 🚀 Tombol Kirim -->
+                    <button type="submit" id="send-btn-{{ $chat->id }}"
+                        class="flex-shrink-0 w-10 h-10 rounded-full text-white
+                    bg-gradient-to-br from-emerald-500 via-green-500 to-green-600
+                    hover:from-emerald-600 hover:to-green-700
+                    flex items-center justify-center shadow-xl shadow-emerald-500/40
+                    transition-all duration-300 hover:scale-110 active:scale-95
+                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                    focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        wire:loading.attr="disabled" wire:target="sendMessage" 
+                        aria-label="Kirim Pesan"
+                        :disabled="$wire.newMessage.trim().length === 0">
+                        <span wire:loading.remove wire:target="sendMessage">
+                            <svg class="w-5 h-5 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </span>
+                        <span wire:loading wire:target="sendMessage">
+                            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0
+                                0 5.373 0 12h4zm2 5.291A7.962
+                                7.962 0 014 12H0c0 3.042
+                                1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                        </span>
+                    </button>
+                </section>
             </div>
             <style>
                 /* Custom scrollbar for message input */
@@ -260,73 +317,27 @@ new class extends Component {
                     width: 8px;
                     background: transparent;
                 }
+
                 #message-input-{{ $chat->id }}::-webkit-scrollbar-thumb {
                     background: linear-gradient(90deg, #34d399 40%, #818cf8 100%);
                     border-radius: 8px;
                 }
+
                 #message-input-{{ $chat->id }}::-webkit-scrollbar-track {
                     background: transparent;
                 }
+
                 /* Firefox */
                 #message-input-{{ $chat->id }} {
                     scrollbar-width: thin;
                     scrollbar-color: #34d399 #f3f4f6;
                 }
+
                 /* Hide scrollbar when not needed */
                 #message-input-{{ $chat->id }}:not(:hover):not(:focus)::-webkit-scrollbar-thumb {
                     background: #e5e7eb;
                 }
             </style>
-
-            {{-- Actions --}}
-            <section class="flex items-center gap-2">
-
-            <!-- 🏷️ Tombol Tag -->
-                <button type="button" wire:click="openTagModal"
-                    class="flex items-center gap-1 px-1.5 py-1 rounded-xl text-xs font-medium
-                        bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
-                        text-white shadow hover:shadow-md transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400
-                        flex-shrink-0 whitespace-nowrap">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    <span class="hidden sm:inline">Tag</span>
-                    @if (count($taggedUsers) > 0)
-                        <span
-                            class="bg-white/30 px-1 py-0.5 rounded-full text-[10px] font-semibold shadow text-blue-900 dark:text-blue-200 ml-1">
-                            {{ count($taggedUsers) }}
-                        </span>
-                    @endif
-                </button>
-            <!-- 🚀 Tombol Kirim -->
-            <button type="submit" id="send-btn-{{ $chat->id }}"
-                class="flex-shrink-0 w-10 h-10 rounded-full text-white
-                    bg-gradient-to-br from-emerald-500 via-green-500 to-green-600
-                    hover:from-emerald-600 hover:to-green-700
-                    flex items-center justify-center shadow-xl shadow-emerald-500/40
-                    transition-all duration-300 hover:scale-110 active:scale-95
-                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                    focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                wire:loading.attr="disabled" wire:target="sendMessage" aria-label="Kirim Pesan">
-                <span wire:loading.remove wire:target="sendMessage">
-                    <svg class="w-5 h-5 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                </span>
-                <span wire:loading wire:target="sendMessage">
-                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"></svg>
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                            stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0
-                                0 5.373 0 12h4zm2 5.291A7.962
-                                7.962 0 014 12H0c0 3.042
-                                1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                </span>
-            </button>
-            </section>
         </form>
     </section>
 
@@ -373,10 +384,9 @@ new class extends Component {
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>
-                    <input type="text" 
-                           wire:model.live.debounce.300ms="searchQuery"
-                           placeholder="Cari peserta berdasarkan nama..."
-                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 
+                    <input type="text" wire:model.live.debounce.300ms="searchQuery"
+                        placeholder="Cari peserta berdasarkan nama..."
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 
                                   rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 
                                   bg-white dark:bg-gray-800 text-gray-900 dark:text-white 
                                   placeholder-gray-500 dark:placeholder-gray-400 text-sm">
@@ -387,7 +397,8 @@ new class extends Component {
                 @if ($this->chatMembers->count() > 0)
                     <!-- Info tentang batasan jika tidak ada pencarian -->
                     @if (empty(trim($searchQuery)) && $this->chat->members()->where('users.id', '!=', Auth::id())->count() > 3)
-                        <div class="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div
+                            class="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
                             <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300 text-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -421,7 +432,8 @@ new class extends Component {
 
                                 <div>
                                     @if (in_array($member->id, $taggedUsers))
-                                        <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 text-emerald-500" fill="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     @else
@@ -438,7 +450,8 @@ new class extends Component {
                     <div class="text-center py-10 text-gray-500 dark:text-gray-400">
                         @if (!empty(trim($searchQuery)))
                             <div class="flex flex-col items-center gap-2">
-                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
@@ -483,37 +496,21 @@ new class extends Component {
         }
 
         /**
-         * Inisialisasi input pesan (Markdown-aware)
+         * Auto-resize textarea berdasarkan konten
          */
-        window.initializeMessageInput = function(messageInput, chatId) {
+        window.autoResizeTextarea = function(textarea) {
             'use strict';
-            if (messageInput.getAttribute('data-initialized') === 'true') return;
-            messageInput.setAttribute('data-initialized', 'true');
 
-            const hiddenInput = document.getElementById('hidden-message-' + chatId);
-
-            function safeLivewireSet(property, value) {
-                try {
-                    @this.set(property, value);
-                } catch (e) {
-                    console.error(e);
-                }
+            function resize() {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 96) + 'px'; // max-h-24 = 96px
             }
 
-            function updateHiddenInput() {
-                const text = messageInput.innerText.trim();
-                hiddenInput.value = text;
-                safeLivewireSet('newMessage', text);
-                messageInput.classList.toggle('empty', text === '');
-            }
+            textarea.addEventListener('input', resize);
+            textarea.addEventListener('change', resize);
 
-            messageInput.addEventListener('input', function() {
-                updateHiddenInput();
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 144) + 'px';
-            });
-
-            updateHiddenInput();
+            // Initial resize
+            resize();
         };
 
         /**
@@ -522,15 +519,12 @@ new class extends Component {
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('message-sent', () => {
                 const currentChatId = @js($chat->id);
-                const input = document.getElementById('message-input-' + currentChatId);
-                const hidden = document.getElementById('hidden-message-' + currentChatId);
+                const textarea = document.getElementById('message-input-' + currentChatId);
 
-                if (input) {
-                    input.innerText = '';
-                    input.style.height = '48px';
-                    input.classList.add('empty');
+                if (textarea) {
+                    textarea.value = '';
+                    textarea.style.height = '40px';
                 }
-                if (hidden) hidden.value = '';
 
                 setTimeout(scrollToBottom, 50);
             });
@@ -543,47 +537,28 @@ new class extends Component {
     <!-- 🎨 STYLE -->
     <!-- ======================== -->
     <style>
-        [contenteditable]:empty:before,
-        [contenteditable].empty:before {
-            content: attr(data-placeholder);
-            color: #9ca3af;
-            pointer-events: none;
-            display: block;
-        }
-
-        [contenteditable]:focus:before {
-            content: '';
-        }
-
-        .dark [contenteditable]:empty:before,
-        .dark [contenteditable].empty:before {
-            color: #6b7280;
-        }
-
         /* Responsive layout untuk form input */
         @media (max-width: 640px) {
+
             /* Pada mobile, pastikan form tidak overflow */
             form {
                 width: 100%;
                 min-width: 0;
             }
-            
+
             /* Input container harus fleksibel */
             .flex-1 {
                 min-width: 0;
                 flex: 1 1 0%;
             }
-            
-            /* Input pesan responsive */
-            [contenteditable] {
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-                white-space: pre-wrap;
+
+            /* Textarea responsive */
+            textarea {
                 width: 100%;
                 min-width: 0;
                 box-sizing: border-box;
             }
-            
+
             /* Tombol tag lebih kecil di mobile */
             .flex-shrink-0 {
                 flex-shrink: 0;
