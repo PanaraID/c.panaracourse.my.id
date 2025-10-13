@@ -75,9 +75,18 @@ new class extends Component {
             @endif
 
             {{-- Message Content (PERUBAHAN DI SINI) --}}
+            @php
+                // Deteksi jika konten tidak ada spasi sama sekali
+                $isNoSpace = !Str::contains($message->content, ' ');
+            @endphp
             <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }} prose dark:prose-invert">
-                {{-- Tampilkan konten yang sudah di-parse dan di-sanitize --}}
-                {!! $parsedContent !!} 
+                @if($isNoSpace)
+                    {{-- Jika tidak ada spasi, pecah setiap 20 karakter dan tambahkan <br> --}}
+                    {!! implode('<br>', str_split($message->content, 20)) !!}
+                @else
+                    {{-- Tampilkan konten yang sudah di-parse dan di-sanitize --}}
+                    {!! $parsedContent !!}
+                @endif
             </div>
 
             {{-- Tagged Users Info --}}
