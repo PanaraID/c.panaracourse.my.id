@@ -103,8 +103,8 @@ new class extends Component {
             return $query->get();
         }
 
-        // Jika tidak ada pencarian, batasi maksimal 3 peserta
-        return $query->limit(3)->get();
+        // Jika tidak ada pencarian, batasi maksimal 0 peserta
+        return $query->limit(0)->get();
     }
 
     /**
@@ -361,7 +361,7 @@ new class extends Component {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span>Menampilkan 3 peserta pertama. Gunakan pencarian untuk melihat semua peserta.</span>
+                                <span>Gunakan pencarian untuk melihat peserta.</span>
                             </div>
                         </div>
                     @endif
