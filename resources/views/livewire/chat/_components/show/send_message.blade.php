@@ -248,29 +248,32 @@ new class extends Component {
                     x-data="{}"
                     x-init="$nextTick(() => window.initializeMessageInput($el, '{{ $chat->id }}'))"></div>
                 <input type="hidden" wire:model="newMessage" id="hidden-message-{{ $chat->id }}">
+            </div>
 
-                <!-- 🏷️ Tombol Tag -->
+            {{-- Actions --}}
+            <section class="flex items-center gap-2">
+
+            <!-- 🏷️ Tombol Tag -->
                 <button type="button" wire:click="openTagModal"
-                    class="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-2xl text-sm font-medium
+                    class="flex items-center gap-1 px-1.5 py-1 rounded-xl text-xs font-medium
                         bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
-                        text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400
+                        text-white shadow hover:shadow-md transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400
                         flex-shrink-0 whitespace-nowrap">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
                     <span class="hidden sm:inline">Tag</span>
                     @if (count($taggedUsers) > 0)
                         <span
-                            class="bg-white/30 px-2 py-1 rounded-full text-xs font-semibold shadow text-blue-900 dark:text-blue-200 ml-1">
+                            class="bg-white/30 px-1 py-0.5 rounded-full text-[10px] font-semibold shadow text-blue-900 dark:text-blue-200 ml-1">
                             {{ count($taggedUsers) }}
                         </span>
                     @endif
                 </button>
-            </div>
             <!-- 🚀 Tombol Kirim -->
             <button type="submit" id="send-btn-{{ $chat->id }}"
-                class="flex-shrink-0 w-14 h-14 rounded-full text-white
+                class="flex-shrink-0 w-10 h-10 rounded-full text-white
                     bg-gradient-to-br from-emerald-500 via-green-500 to-green-600
                     hover:from-emerald-600 hover:to-green-700
                     flex items-center justify-center shadow-xl shadow-emerald-500/40
@@ -279,13 +282,13 @@ new class extends Component {
                     focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 wire:loading.attr="disabled" wire:target="sendMessage" aria-label="Kirim Pesan">
                 <span wire:loading.remove wire:target="sendMessage">
-                    <svg class="w-7 h-7 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                             d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
                 </span>
                 <span wire:loading wire:target="sendMessage">
-                    <svg class="w-7 h-7 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"></svg>
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
                             stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0
@@ -295,6 +298,7 @@ new class extends Component {
                     </svg>
                 </span>
             </button>
+            </section>
         </form>
     </section>
 
