@@ -198,4 +198,4 @@ console.log('[App] Initializing app.js');
 registerServiceWorker();
 setupInstallPrompt();
 setupOnlineOfflineListeners();
-setupNotifications();
+// setupNotifications();
