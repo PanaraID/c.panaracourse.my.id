@@ -198,14 +198,14 @@ new class extends Component {
         @endif
     </div>
 
-    <section>
+    <section class="overflow-x-auto">
         <form wire:submit="sendMessage" class="flex items-end gap-3">
             <!-- 📝 Input Pesan -->
             <div class="flex-1 relative flex items-center gap-2">
                 <div id="message-input-{{ $chat->id }}" wire:ignore contenteditable="true"
                     data-placeholder="Ketik pesan..."
                     class="w-full max-h-36 overflow-y-auto px-6 py-4
-                        bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200
+                        bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 overflow-x-auto
                         dark:from-gray-800 dark:via-gray-900 dark:to-gray-700
                         rounded-3xl text-gray-900 dark:text-gray-100 text-[15px]
                         shadow-lg ring-1 ring-gray-200 dark:ring-gray-700
