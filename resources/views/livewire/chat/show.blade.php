@@ -36,7 +36,7 @@ class extends \Livewire\Volt\Component {
 <div class="flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 h-screen overflow-hidden shadow-2xl">
     @livewire('chat._components.show.header', ['chat' => $chat])
 
-    <div class="flex-1 overflow-y-auto h-full px-1 bg-gray-200 dark:bg-gray-900 transition duration-300" id="messages-container">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden h-full px-1 bg-gray-200 dark:bg-gray-900 transition duration-300" id="messages-container">
         @if ($chat->messages()->count() == 0)
             @livewire('chat._components.show.empty_chat')
         @else
