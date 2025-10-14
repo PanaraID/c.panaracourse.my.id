@@ -104,10 +104,10 @@ new class extends Component {
 
         if (!empty(trim($this->searchQuery))) {
             $query->where('users.name', 'like', '%' . trim($this->searchQuery) . '%');
-            return $query->get();
+            return $query->limit(3)->get();
         }
 
-        return $query->limit(3)->get();
+        return collect();
     }
 
     /**
