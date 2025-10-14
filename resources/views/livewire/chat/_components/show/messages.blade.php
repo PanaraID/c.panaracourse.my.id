@@ -664,6 +664,8 @@ new class extends Component {
                 subtree: true
             });
         }
-        scrollToBottomWhenUserIsAtBottomAndNewMessagesLoaded();
+        setTimeout(() => {
+            scrollToBottomWhenUserIsAtBottomAndNewMessagesLoaded();
+        }, 3000);
     </script>
 </div>
