@@ -133,7 +133,7 @@
                     }
                 }
             </script>
-             <div id="new-message-received" onclick="scrollToBottomBre()"
+             <div id="new-message-received" onclick="scrollToBottomBre()" wire:ignore
                  class="hidden bg-gradient-to-r cursor-pointer from-yellow-400 via-yellow-500 to-yellow-600 dark:from-yellow-600 dark:via-yellow-700 dark:to-yellow-800 text-black dark:text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
                  <svg class="w-5 h-5 text-black dark:text-white animate-bounce" fill="none" stroke="currentColor"
                      viewBox="0 0 24 24">
