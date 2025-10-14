@@ -107,7 +107,7 @@ new class extends Component {
             return $query->get();
         }
 
-        return $query->limit(0)->get();
+        return $query->limit(3)->get();
     }
 
     /**
