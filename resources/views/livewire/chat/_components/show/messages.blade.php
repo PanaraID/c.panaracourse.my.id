@@ -13,7 +13,6 @@ new class extends Component {
     public $isRefreshing = false;
     public $messagesCache = null;
     public $lastRefreshTime = null;
-    public $showNewMessageNotification = false;
     public $isUserAtBottom = true;
 
     /**
@@ -205,11 +204,6 @@ new class extends Component {
                 $this->messagesCache = $this->loadMessages();
                 $this->markChatNotificationsAsRead();
                 
-                // Show notification if user is not at bottom
-                if (!$this->isUserAtBottom) {
-                    $this->showNewMessageNotification = true;
-                }
-                
                 $this->dispatch('new-messages-loaded');
             }
         } catch (\Exception $e) {
@@ -236,14 +230,6 @@ new class extends Component {
     }
 
     /**
-     * Hide new message notification
-     */
-    public function hideNewMessageNotification(): void
-    {
-        $this->showNewMessageNotification = false;
-    }
-
-    /**
      * Set user scroll position status
      */
     public function setUserAtBottom($isAtBottom): void
@@ -261,27 +247,8 @@ new class extends Component {
 
 <div class="space-y-6 chat-background" wire:poll.3s="refreshMessages" id="messages-container"
     wire:key="chat-container-{{ $chat->id }}">
-    
-    {{-- New Message Notification Banner --}}
-    @if($showNewMessageNotification)
-        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce-in" 
-             wire:key="new-message-notification-{{ $chat->id }}">
-            <div class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-3 cursor-pointer transition-all duration-200"
-                 onclick="scrollToBottom(); @this.hideNewMessageNotification()">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                </svg>
-                <span class="font-medium">Ada pesan baru • Scroll ke bawah</span>
-                <button class="text-white hover:text-gray-200 ml-2" onclick="event.stopPropagation(); @this.hideNewMessageNotification()">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
-    @php $prevDate = null; @endphp
 
+    @php $prevDate = null; @endphp
     @forelse ($this->messages as $message)
         @php
             $isOwnMessage = $message->user_id === Auth::id();
@@ -665,5 +632,38 @@ new class extends Component {
                 console.log('Cleaning up Livewire components');
             }
         });
+    </script>
+
+    {{-- Scroll ke bawah saat ada pesan baru dan pengguna berada di bagian bawah --}}
+    <script>
+        function scrollToBottomWhenUserIsAtBottomAndNewMessagesLoaded() {
+            const container = document.getElementById('messages-container');
+            // Mendeteksi apakah container ada perubahan di dalamnya
+            const observer = new MutationObserver(() => {
+                if (container) {
+                    const threshold = container.scrollHeight * 0.005; // 0.5% dari bawah
+                    const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold;
+                    // console.log('Is user at bottom (0.5%)?', isAtBottom);
+                    if (isAtBottom) {
+                        container.scrollTo({
+                            top: container.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    } else {
+                        // console.log('User is not at bottom, not auto-scrolling.');
+                        // Mungkin tampilkan notifikasi atau indikator pesan baru di sini
+                        const element = document.getElementById('new-message-received');
+                        if (element) {
+                            element.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+            observer.observe(container, {
+                childList: true,
+                subtree: true
+            });
+        }
+        scrollToBottomWhenUserIsAtBottomAndNewMessagesLoaded();
     </script>
 </div>

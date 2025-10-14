@@ -117,6 +117,32 @@
 
          <!-- Header Actions -->
          <div class="flex items-center space-x-1">
+            <script>
+                function scrollToBottomBre() {
+                    const container = document.getElementById('messages-container');
+                    if (container) {
+                        container.scrollTo({
+                            top: container.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                        // Sembunyikan notifikasi pesan baru jika terlihat
+                        const element = document.getElementById('new-message-received');
+                        if (element) {
+                            element.classList.add('hidden');
+                        }
+                    }
+                }
+            </script>
+             <div id="new-message-received" onclick="scrollToBottomBre()"
+                 class="hidden bg-gradient-to-r cursor-pointer from-yellow-400 via-yellow-500 to-yellow-600 dark:from-yellow-600 dark:via-yellow-700 dark:to-yellow-800 text-black dark:text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 transition-all duration-300">
+                 <svg class="w-5 h-5 text-black dark:text-white animate-bounce" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                         d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                 </svg>
+                 <span class="font-semibold">Ada Pesan Baru!</span>
+             </div>
+
              <!-- Tag Notifications Button -->
              @if ($this->unreadTags->count() > 0)
                  <button wire:click="openTagsModal"
