@@ -272,6 +272,27 @@ new class extends Component {
     <section class="w-full">
         <!-- 📝 Input Pesan - PLAIN TEXT TEXTAREA -->
         <div class="flex items-center min-w-0">
+            <textarea 
+                wire:model="newMessage"
+                id="message-input-{{ $chat->id }}" 
+                placeholder="Ketik pesan..." 
+                rows="1"
+                class="w-full max-h-24 overflow-y-auto px-3 py-2 resize-none
+                    bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 
+                    dark:from-gray-800 dark:via-gray-900 dark:to-gray-700
+                    text-gray-900 dark:text-gray-100 text-sm
+                    shadow ring-1 ring-gray-200 dark:ring-gray-700
+                    border border-transparent focus:border-emerald-500
+                    focus:ring-2 focus:ring-emerald-500/20 focus:outline-none
+                    transition-all duration-200
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500
+                    scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-gray-100 dark:scrollbar-thumb-emerald-700 dark:scrollbar-track-gray-900
+                    hover:scrollbar-thumb-emerald-400
+                    @error('newMessage') border-red-500 ring-2 ring-red-500/20 dark:bg-red-900/10 @enderror"
+                style="min-height: 40px; line-height: 1.5;" 
+                x-data="{}" 
+                x-init="$nextTick(() => window.autoResizeTextarea($el))"></textarea>
+
             {{-- Actions --}}
             <section class="ml-2 flex items-center gap-2">
                 <!-- 🏷️ Tombol Tag -->
