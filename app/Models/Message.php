@@ -18,6 +18,7 @@ class Message extends Model
 
     protected $casts = [
         'readed_at' => 'datetime',
+        'file_size' => 'integer',
     ];
 
     protected static function booted(): void

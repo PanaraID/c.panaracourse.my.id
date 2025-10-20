@@ -8,8 +8,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Livewire\WithFileUploads;
 
 new class extends Component {
+    use WithFileUploads;
+    
     /**
      * Component name for debugging
      */
@@ -24,6 +27,11 @@ new class extends Component {
      * Isi pesan baru.
      */
     public string $newMessage = '';
+
+    /**
+     * File attachment.
+     */
+    public $fileAttachment = null;
 
     /**
      * ID pesan terakhir (opsional).
@@ -51,6 +59,32 @@ new class extends Component {
     public function mount(Chat $chat): void
     {
         $this->chat = $chat;
+    }
+
+    /**
+     * Remove file attachment.
+     */
+    public function removeFile(): void
+    {
+        $this->fileAttachment = null;
+    }
+
+    /**
+     * Get listeners for Livewire events.
+     */
+    public function getListeners()
+    {
+        return [
+            'trigger-file-upload' => 'triggerFileUpload',
+        ];
+    }
+
+    /**
+     * Trigger file upload from external component.
+     */
+    public function triggerFileUpload(): void
+    {
+        $this->dispatch('open-file-input');
     }
 
     /**
@@ -118,29 +152,41 @@ new class extends Component {
         // 1️⃣ Sanitasi awal
         $this->newMessage = trim($this->newMessage);
 
-        if (Str::length($this->newMessage) < 1) {
-            $this->addError('newMessage', 'Pesan tidak boleh kosong.');
+        // Validasi: harus ada pesan atau file
+        if (Str::length($this->newMessage) < 1 && !$this->fileAttachment) {
+            $this->addError('newMessage', 'Pesan atau file tidak boleh kosong.');
             return;
         }
 
-        // 2️⃣ Validasi isi pesan
-        $this->validate([
-            'newMessage' => [
-                'required',
-                'string',
-                'min:1',
-                'max:5000',
-                function ($attribute, $value, $fail) {
-                    if (preg_match('/(\+62|62|0)?[\s\-]?\d{2,4}[\s\-]?\d{2,4}[\s\-]?\d{2,5}/', $value)) {
-                        $fail('Pesan tidak boleh mengandung nomor telepon.');
-                    }
-                },
-            ],
-        ], [
-            'newMessage.required' => 'Pesan tidak boleh kosong.',
-            'newMessage.min' => 'Pesan minimal 1 karakter.',
-            'newMessage.max' => 'Pesan maksimal 5000 karakter.',
-        ]);
+        // 2️⃣ Validasi isi pesan (jika ada)
+        if (Str::length($this->newMessage) > 0) {
+            $this->validate([
+                'newMessage' => [
+                    'nullable',
+                    'string',
+                    'min:1',
+                    'max:5000',
+                    function ($attribute, $value, $fail) {
+                        if (preg_match('/(\+62|62|0)?[\s\-]?\d{2,4}[\s\-]?\d{2,4}[\s\-]?\d{2,5}/', $value)) {
+                            $fail('Pesan tidak boleh mengandung nomor telepon.');
+                        }
+                    },
+                ],
+            ], [
+                'newMessage.min' => 'Pesan minimal 1 karakter.',
+                'newMessage.max' => 'Pesan maksimal 5000 karakter.',
+            ]);
+        }
+
+        // 2.5️⃣ Validasi file (jika ada)
+        if ($this->fileAttachment) {
+            $this->validate([
+                'fileAttachment' => 'file|max:10240', // Max 10MB
+            ], [
+                'fileAttachment.file' => 'File tidak valid.',
+                'fileAttachment.max' => 'Ukuran file maksimal 10MB.',
+            ]);
+        }
 
         // 3️⃣ Validasi user adalah member dari chat
         if (!$this->chat->members()->where('users.id', Auth::id())->exists()) {
@@ -149,7 +195,7 @@ new class extends Component {
         }
 
         // 4️⃣ Simpan pesan
-        $content = $this->newMessage;
+        $content = $this->newMessage ?: '[File Attachment]';
         $content = str_replace(["\r\n", "\r", "\n"], '<br>', $content);
 
         try {
@@ -157,11 +203,29 @@ new class extends Component {
             DB::beginTransaction();
 
             // Buat pesan baru
-            $message = Message::create([
+            $messageData = [
                 'chat_id' => $this->chat->id,
                 'user_id' => Auth::id(),
                 'content' => $content,
-            ]);
+            ];
+
+            // Handle file upload jika ada
+            if ($this->fileAttachment) {
+                $fileName = $this->fileAttachment->getClientOriginalName();
+                $fileExtension = $this->fileAttachment->getClientOriginalExtension();
+                $fileSize = $this->fileAttachment->getSize();
+                $fileMimeType = $this->fileAttachment->getMimeType();
+                
+                // Store file
+                $filePath = $this->fileAttachment->store('chat-files', 'public');
+                
+                $messageData['file_path'] = $filePath;
+                $messageData['file_name'] = $fileName;
+                $messageData['file_type'] = $fileMimeType;
+                $messageData['file_size'] = $fileSize;
+            }
+
+            $message = Message::create($messageData);
 
             // 5️⃣ Simpan tags jika ada
             if (!empty($this->taggedUsers)) {
@@ -196,6 +260,7 @@ new class extends Component {
                 'user_name' => Auth::user()->name ?? 'Unknown',
                 'content_length' => Str::length($content),
                 'tagged_users_count' => count($this->taggedUsers),
+                'has_file' => $this->fileAttachment ? true : false,
             ]);
 
             // 7️⃣ Update state
@@ -211,7 +276,7 @@ new class extends Component {
             $this->dispatch('message-sent');
 
             // 9️⃣ Reset input form
-            $this->reset(['newMessage', 'taggedUsers']);
+            $this->reset(['newMessage', 'taggedUsers', 'fileAttachment']);
             $this->showTagModal = false;
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -271,6 +336,48 @@ new class extends Component {
 
     {{-- Kolom Semua Inputan --}}
     <section class="w-full">
+        <!-- File Upload Loading Indicator -->
+        <div wire:loading wire:target="fileAttachment" class="mb-2 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <svg class="w-5 h-5 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm text-blue-700 dark:text-blue-300">Mengunggah file...</span>
+        </div>
+
+        <!-- File Preview -->
+        @if ($fileAttachment)
+            <div class="mb-2 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="flex-1 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-blue-900 dark:text-blue-200 truncate">
+                            {{ $fileAttachment->getClientOriginalName() }}
+                        </p>
+                        <p class="text-xs text-blue-600 dark:text-blue-400">
+                            {{ number_format($fileAttachment->getSize() / 1024, 2) }} KB
+                        </p>
+                    </div>
+                </div>
+                <button type="button" wire:click="removeFile"
+                    class="flex-shrink-0 text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        @endif
+
+        <!-- Hidden File Input -->
+        <input type="file" 
+            wire:model="fileAttachment" 
+            id="file-input-{{ $chat->id }}" 
+            class="hidden"
+            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
+
         <!-- 📝 Input Pesan - PLAIN TEXT TEXTAREA -->
         <div class="flex items-center min-w-0">
             <textarea 
@@ -379,6 +486,15 @@ new class extends Component {
 
     <!-- ⚠️ Error Message -->
     @error('newMessage')
+        <div
+            class="mt-3 mx-auto max-w-lg px-4 py-2 rounded-xl text-sm font-medium
+                   bg-red-50 dark:bg-red-900/30 border border-red-400 dark:border-red-800
+                   text-red-700 dark:text-red-400 animate-pulse">
+            {{ $message }}
+        </div>
+    @enderror
+
+    @error('fileAttachment')
         <div
             class="mt-3 mx-auto max-w-lg px-4 py-2 rounded-xl text-sm font-medium
                    bg-red-50 dark:bg-red-900/30 border border-red-400 dark:border-red-800
@@ -565,6 +681,15 @@ new class extends Component {
             });
 
             Livewire.on('new-message-sent', () => setTimeout(scrollToBottom, 100));
+            
+            // Handle file upload trigger from header
+            Livewire.on('open-file-input', () => {
+                const currentChatId = @js($chat->id);
+                const fileInput = document.getElementById('file-input-' + currentChatId);
+                if (fileInput) {
+                    fileInput.click();
+                }
+            });
         });
     </script>
 

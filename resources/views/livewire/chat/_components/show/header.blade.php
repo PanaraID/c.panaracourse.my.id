@@ -8,19 +8,22 @@
      public $chat;
      public bool $showTagsModal = false;
      public $lastTagCount = 0; // Track perubahan tag count
- 
+
      public function mount(Chat $chat)
      {
          $this->chat = $chat;
          $this->lastTagCount = $this->getUnreadTagsCount();
      }
- 
+
+     public function triggerFileUpload()
+     {
+         $this->dispatch('trigger-file-upload');
+     }
+
      public function openTagsModal()
      {
          $this->showTagsModal = true;
-     }
- 
-     public function closeTagsModal()
+     }     public function closeTagsModal()
      {
          $this->showTagsModal = false;
      }
@@ -117,6 +120,16 @@
 
          <!-- Header Actions -->
          <div class="flex items-center space-x-1">
+            <!-- File Upload Button -->
+            <button wire:click="triggerFileUpload"
+                class="text-white hover:bg-white/20 rounded-full p-2.5 transition-all duration-300 hover:scale-110 group"
+                title="Kirim File">
+                <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+            </button>
+            
             <script>
                 function scrollToBottomBre() {
                     const container = document.getElementById('messages-container');

@@ -70,6 +70,73 @@ new class extends Component {
                 // Deteksi jika konten tidak ada spasi sama sekali
                 $isNoSpace = !Str::contains($message->content, ' ');
             @endphp
+            
+            {{-- File Attachment Display --}}
+            @if($message->file_path)
+                <div class="mb-2">
+                    @php
+                        $fileUrl = asset('storage/' . $message->file_path);
+                        $isImage = Str::startsWith($message->file_type, 'image/');
+                        $isVideo = Str::startsWith($message->file_type, 'video/');
+                        $isPdf = $message->file_type === 'application/pdf';
+                    @endphp
+                    
+                    @if($isImage)
+                        {{-- Image Display --}}
+                        <div class="rounded-lg overflow-hidden">
+                            <a href="{{ $fileUrl }}" target="_blank">
+                                <img src="{{ $fileUrl }}" 
+                                     alt="{{ $message->file_name }}" 
+                                     class="max-w-full h-auto rounded-lg hover:opacity-90 transition cursor-pointer"
+                                     style="max-height: 300px; object-fit: contain;">
+                            </a>
+                        </div>
+                    @elseif($isVideo)
+                        {{-- Video Display --}}
+                        <div class="rounded-lg overflow-hidden">
+                            <video controls class="max-w-full h-auto rounded-lg" style="max-height: 300px;">
+                                <source src="{{ $fileUrl }}" type="{{ $message->file_type }}">
+                                Browser Anda tidak mendukung video.
+                            </video>
+                        </div>
+                    @else
+                        {{-- General File Display --}}
+                        <a href="{{ $fileUrl }}" target="_blank" download="{{ $message->file_name }}"
+                           class="flex items-center gap-3 p-3 rounded-lg {{ $isOwnMessage ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' }} transition">
+                            <div class="flex-shrink-0">
+                                @if($isPdf)
+                                    <svg class="w-10 h-10 {{ $isOwnMessage ? 'text-white' : 'text-red-500' }}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                    </svg>
+                                @else
+                                    <svg class="w-10 h-10 {{ $isOwnMessage ? 'text-white' : 'text-blue-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                @endif
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium {{ $isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-white' }} truncate">
+                                    {{ $message->file_name }}
+                                </p>
+                                <p class="text-xs {{ $isOwnMessage ? 'text-white/70' : 'text-gray-500 dark:text-gray-400' }}">
+                                    {{ number_format($message->file_size / 1024, 2) }} KB
+                                </p>
+                            </div>
+                            <svg class="w-5 h-5 {{ $isOwnMessage ? 'text-white' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        </a>
+                    @endif
+                    
+                    @if($message->file_name && !in_array($message->file_type, ['image/', 'video/']))
+                        <p class="text-xs {{ $isOwnMessage ? 'text-white/70' : 'text-gray-500 dark:text-gray-400' }} mt-1">
+                            {{ $message->file_name }}
+                        </p>
+                    @endif
+                </div>
+            @endif
+
             <div class="{{ !$isOwnMessage && !$isReaded ? 'font-medium' : '' }} prose dark:prose-invert">
                 @php
                     // Fungsi untuk auto-link sebagai closure
