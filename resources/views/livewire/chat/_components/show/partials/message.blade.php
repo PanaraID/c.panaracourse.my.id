@@ -120,7 +120,16 @@ new class extends Component {
                                     {{ $message->file_name }}
                                 </p>
                                 <p class="text-xs {{ $isOwnMessage ? 'text-white/70' : 'text-gray-500 dark:text-gray-400' }}">
-                                    {{ number_format($message->file_size / 1024, 2) }} KB
+                                    @php
+                                        $fileSize = $message->file_size;
+                                        if ($fileSize >= 1073741824) {
+                                            echo number_format($fileSize / 1073741824, 2) . ' GB';
+                                        } elseif ($fileSize >= 1048576) {
+                                            echo number_format($fileSize / 1048576, 2) . ' MB';
+                                        } else {
+                                            echo number_format($fileSize / 1024, 2) . ' KB';
+                                        }
+                                    @endphp
                                 </p>
                             </div>
                             <svg class="w-5 h-5 {{ $isOwnMessage ? 'text-white' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -181,10 +181,10 @@ new class extends Component {
         // 2.5️⃣ Validasi file (jika ada)
         if ($this->fileAttachment) {
             $this->validate([
-                'fileAttachment' => 'file|max:1024000', // Max 1GB
+                'fileAttachment' => 'file|max:1048576', // Max 1GB (1024 * 1024 KB)
             ], [
                 'fileAttachment.file' => 'File tidak valid.',
-                'fileAttachment.max' => 'Ukuran file maksimal 1 GB.',
+                'fileAttachment.max' => '⚠️ Ukuran file melebihi batas maksimal 1 GB. Silakan pilih file yang lebih kecil.',
             ]);
         }
 
@@ -358,7 +358,19 @@ new class extends Component {
                             {{ $fileAttachment->getClientOriginalName() }}
                         </p>
                         <p class="text-xs text-blue-600 dark:text-blue-400">
-                            {{ number_format($fileAttachment->getSize() / 1024, 2) }} KB
+                            @php
+                                $fileSize = $fileAttachment->getSize();
+                                if ($fileSize >= 1073741824) {
+                                    echo number_format($fileSize / 1073741824, 2) . ' GB';
+                                } elseif ($fileSize >= 1048576) {
+                                    echo number_format($fileSize / 1048576, 2) . ' MB';
+                                } else {
+                                    echo number_format($fileSize / 1024, 2) . ' KB';
+                                }
+                            @endphp
+                            @if($fileSize > 1073741824)
+                                <span class="ml-1 text-red-600 dark:text-red-400 font-bold">⚠️ Melebihi 1 GB!</span>
+                            @endif
                         </p>
                     </div>
                 </div>
@@ -377,6 +389,15 @@ new class extends Component {
             id="file-input-{{ $chat->id }}" 
             class="hidden"
             accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
+
+        <!-- File Size Info -->
+        <div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Ukuran file maksimal: <strong class="text-emerald-600 dark:text-emerald-400">1 GB</strong></span>
+        </div>
 
         <!-- 📝 Input Pesan - PLAIN TEXT TEXTAREA -->
         <div class="flex items-center min-w-0">
@@ -495,20 +516,31 @@ new class extends Component {
     @enderror
     @error('fileAttachment')
         <div
-            class="mt-3 mx-auto max-w-lg px-4 py-2 rounded-xl text-sm font-medium
-                   bg-red-50 dark:bg-red-900/30 border border-red-400 dark:border-red-800
-                   text-red-700 dark:text-red-400 animate-pulse">
-            {{ $message }}
+            class="mt-3 mx-auto max-w-lg px-4 py-3 rounded-xl text-sm font-medium
+                   bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/40 dark:to-orange-900/40 
+                   border-2 border-red-500 dark:border-red-700
+                   text-red-800 dark:text-red-300 shadow-lg animate-shake">
+            <div class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                    <p class="font-bold">{{ $message }}</p>
+                    <p class="text-xs mt-1 text-red-600 dark:text-red-400">Silakan pilih file dengan ukuran lebih kecil atau kompres terlebih dahulu.</p>
+                </div>
+            </div>
         </div>
-    @enderror
-
-    @error('fileAttachment')
-        <div
-            class="mt-3 mx-auto max-w-lg px-4 py-2 rounded-xl text-sm font-medium
-                   bg-red-50 dark:bg-red-900/30 border border-red-400 dark:border-red-800
-                   text-red-700 dark:text-red-400 animate-pulse">
-            {{ $message }}
-        </div>
+        <style>
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+            .animate-shake {
+                animation: shake 0.5s ease-in-out;
+            }
+        </style>
     @enderror
 
     <!-- ======================== -->
