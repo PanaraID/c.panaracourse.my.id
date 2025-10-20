@@ -181,10 +181,10 @@ new class extends Component {
         // 2.5️⃣ Validasi file (jika ada)
         if ($this->fileAttachment) {
             $this->validate([
-                'fileAttachment' => 'file|max:10240', // Max 10MB
+                'fileAttachment' => 'file|max:1024000', // Max 1GB
             ], [
                 'fileAttachment.file' => 'File tidak valid.',
-                'fileAttachment.max' => 'Ukuran file maksimal 10MB.',
+                'fileAttachment.max' => 'Ukuran file maksimal 1 GB.',
             ]);
         }
 
