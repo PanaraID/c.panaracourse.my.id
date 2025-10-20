@@ -527,7 +527,6 @@ new class extends Component {
                 </svg>
                 <div>
                     <p class="font-bold">{{ $message }}</p>
-                    <p class="text-xs mt-1 text-red-600 dark:text-red-400">Silakan pilih file dengan ukuran lebih kecil atau kompres terlebih dahulu.</p>
                 </div>
             </div>
         </div>
