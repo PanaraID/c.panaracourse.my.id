@@ -185,6 +185,8 @@ new class extends Component {
             ], [
                 'fileAttachment.file' => 'File tidak valid.',
                 'fileAttachment.max' => '⚠️ Ukuran file melebihi batas maksimal 1 GB. Silakan pilih file yang lebih kecil.',
+                'fileAttachment.mimes' => 'Tipe file tidak diizinkan.',
+                'fileAttachment.max.file' => 'Ukuran file melebihi batas maksimal 1 GB.',
             ]);
         }
 
