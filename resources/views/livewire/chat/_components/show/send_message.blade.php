@@ -493,6 +493,14 @@ new class extends Component {
             {{ $message }}
         </div>
     @enderror
+    @error('fileAttachment')
+        <div
+            class="mt-3 mx-auto max-w-lg px-4 py-2 rounded-xl text-sm font-medium
+                   bg-red-50 dark:bg-red-900/30 border border-red-400 dark:border-red-800
+                   text-red-700 dark:text-red-400 animate-pulse">
+            {{ $message }}
+        </div>
+    @enderror
 
     @error('fileAttachment')
         <div
