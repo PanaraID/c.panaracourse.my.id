@@ -269,6 +269,7 @@ new class extends Component {
         @endif
     </div>
 
+    {{-- Kolom Semua Inputan --}}
     <section class="w-full">
         <!-- 📝 Input Pesan - PLAIN TEXT TEXTAREA -->
         <div class="flex items-center min-w-0">
