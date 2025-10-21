@@ -667,7 +667,7 @@ new class extends Component {
             });
         });
 
-        // Initial scroll setup (menggulir ke pesan belum dibaca terakhir atau ke bawah)
+        // Initial scroll setup (PRIORITAS: pesan belum dibaca terakhir, baru scroll ke bawah jika tidak ada)
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const container = document.getElementById('messages-container');
@@ -676,15 +676,17 @@ new class extends Component {
                     const unreadElements = container.querySelectorAll('[data-is-readed="false"]');
                     
                     if (unreadElements.length > 0) {
-                        // Get the last unread message
+                        // FOKUS: Scroll ke pesan belum dibaca terakhir
                         const lastUnreadElement = unreadElements[unreadElements.length - 1];
                         lastUnreadElement.scrollIntoView({
                             behavior: 'smooth',
                             block: 'center'
                         });
+                        console.log(`Scrolled to last unread message (${unreadElements.length} unread messages)`);
                     } else {
-                        // No unread messages, scroll to bottom
+                        // Tidak ada pesan belum dibaca, baru scroll ke bawah
                         scrollToBottom();
+                        console.log('No unread messages, scrolled to bottom');
                     }
                 }
             }, 200);
