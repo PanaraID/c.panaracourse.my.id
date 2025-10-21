@@ -18,7 +18,7 @@ new class extends Component {
     public bool $isUserAtBottom = true;
     
     // Properti Pagination Scroll
-    public int $perPage = 50; // Ditingkatkan untuk pengalaman yang lebih baik
+    public int $perPage = 300; // Ditingkatkan untuk pengalaman yang lebih baik
     public bool $hasMoreMessages = true;
     public bool $isLoadingMore = false;
     // ID pesan PALING LAMA yang saat ini dimuat (di bagian atas tampilan)
