@@ -6,14 +6,23 @@ use App\Models\Message;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection; // Import Collection untuk tipe yang lebih jelas
 
 new class extends Component {
-    public $chat;
-    public $lastMessageId;
-    public $isRefreshing = false;
-    public $messagesCache = null;
-    public $lastRefreshTime = null;
-    public $isUserAtBottom = true;
+    // Properti utama
+    public Chat $chat;
+    public ?int $lastMessageId = null; // ID pesan terbaru yang dimuat
+    public bool $isRefreshing = false;
+    public ?Collection $messagesCache = null; 
+    public ?\Illuminate\Support\Carbon $lastRefreshTime = null;
+    public bool $isUserAtBottom = true;
+    
+    // Properti Pagination Scroll
+    public int $perPage = 50; // Ditingkatkan untuk pengalaman yang lebih baik
+    public bool $hasMoreMessages = true;
+    public bool $isLoadingMore = false;
+    // ID pesan PALING LAMA yang saat ini dimuat (di bagian atas tampilan)
+    public ?int $oldestLoadedMessageId = null; 
 
     /**
      * Mount component and initialize state
@@ -21,9 +30,28 @@ new class extends Component {
     public function mount(Chat $chat): void
     {
         $this->chat = $chat;
-        $this->lastMessageId = $this->getLatestMessageId();
-        $this->messagesCache = $this->loadMessages();
+        
+        // 1. Muat batch pesan terbaru
+        $this->messagesCache = $this->loadLatestMessages();
+        
+        // 2. Set ID pesan terakhir dan ID pesan paling lama yang dimuat
+        if ($this->messagesCache->isNotEmpty()) {
+            // lastMessageId (ID pesan terbaru)
+            $this->lastMessageId = $this->messagesCache->last()->id;
+            // oldestLoadedMessageId (ID pesan paling lama yang sudah dimuat)
+            $this->oldestLoadedMessageId = $this->messagesCache->first()->id;
+        } else {
+            // Jika tidak ada pesan, coba dapatkan ID pesan terakhir dari DB (jika ada)
+            $this->lastMessageId = $this->getLatestMessageId(); 
+        }
+
         $this->lastRefreshTime = now();
+        
+        // 3. Periksa apakah ada pesan yang lebih lama
+        $this->checkHasMoreMessages();
+        
+        // Optional: Tandai notifikasi sebagai terbaca
+        $this->markChatNotificationsAsRead();
     }
 
     /**
@@ -39,7 +67,7 @@ new class extends Component {
      */
     public function dehydrate()
     {
-        // Don't cache messages in snapshot to prevent issues
+        // Hapus cache agar tidak tersimpan di snapshot
         $this->messagesCache = null;
     }
 
@@ -62,24 +90,133 @@ new class extends Component {
     }
 
     /**
-     * Load messages from database with error handling
+     * Load initial/latest batch of messages
      */
-    public function loadMessages()
+    private function loadLatestMessages(): Collection
     {
         try {
-            return Message::where('chat_id', $this->chat->id)
+            // Kueri pesan terbaru
+            $messages = Message::where('chat_id', $this->chat->id)
                           ->with(['user', 'taggedUsers'])
-                          ->get();
+                          ->latest('created_at')
+                          ->limit($this->perPage)
+                          ->get()
+                          ->reverse(); // Reverse untuk urutan oldest-to-newest
+            
+            return $messages;
         } catch (\Exception $e) {
-            Log::error('Error loading messages', [
+            Log::error('Error loading latest messages', [
                 'chat_id' => $this->chat->id,
-                'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return collect();
         }
+    }
+
+    /**
+     * Load messages (digunakan oleh Hydrate untuk memuat ulang pesan yang sudah ada)
+     */
+    public function loadMessages(): Collection
+    {
+        // Jika tidak ada oldestLoadedMessageId (misal setelah forceRefresh tanpa pesan), muat yang terbaru
+        if (!$this->oldestLoadedMessageId) {
+            return $this->loadLatestMessages();
+        }
+        
+        try {
+            // Hitung berapa banyak pesan yang harus dimuat ulang
+            $totalMessagesLoaded = Message::where('chat_id', $this->chat->id)
+                ->where('id', '>=', $this->oldestLoadedMessageId) // Memuat semua pesan >= oldest
+                ->count();
+                
+            $messages = Message::where('chat_id', $this->chat->id)
+                ->with(['user', 'taggedUsers'])
+                ->latest('created_at')
+                ->limit($totalMessagesLoaded > 0 ? $totalMessagesLoaded : $this->perPage)
+                ->get()
+                ->reverse(); 
+
+            return $messages;
+            
+        } catch (\Exception $e) {
+            Log::error('Error re-loading messages', [
+                'chat_id' => $this->chat->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return collect();
+        }
+    }
+
+    /**
+     * Load more older messages (saat scroll ke atas)
+     */
+    public function loadMoreMessages(): void
+    {
+        if ($this->isLoadingMore || !$this->hasMoreMessages || !$this->oldestLoadedMessageId) {
+            $this->isLoadingMore = false; 
+            return;
+        }
+
+        $this->isLoadingMore = true;
+
+        try {
+            // ID pesan PALING LAMA yang saat ini ditampilkan
+            $currentOldestId = $this->oldestLoadedMessageId;
+            
+            // Kueri pesan yang ID-nya lebih kecil (lebih lama) dari ID pesan paling lama yang sudah dimuat
+            $olderMessages = Message::where('chat_id', $this->chat->id)
+                ->where('id', '<', $currentOldestId)
+                ->with(['user', 'taggedUsers'])
+                ->latest('created_at') 
+                ->limit($this->perPage)
+                ->get()
+                ->reverse(); 
+
+            if ($olderMessages->isEmpty()) {
+                $this->hasMoreMessages = false;
+            } else {
+                // Prepend (gabungkan di depan) pesan lama ke cache yang ada
+                $this->messagesCache = $olderMessages->concat($this->messagesCache);
+                
+                // Perbarui ID pesan paling lama yang dimuat
+                $this->oldestLoadedMessageId = $olderMessages->first()->id;
+                
+                // Periksa apakah masih ada pesan yang lebih lama
+                $this->checkHasMoreMessages();
+                
+                // Dispatch event untuk mempertahankan posisi scroll
+                $this->dispatch('older-messages-loaded', ['oldestMessageId' => $currentOldestId]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error loading more messages', [
+                'chat_id' => $this->chat->id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+        } finally {
+            $this->isLoadingMore = false;
+        }
+    }
+
+    /**
+     * Check if there are more messages to load
+     */
+    private function checkHasMoreMessages(): void
+    {
+        if (!$this->oldestLoadedMessageId) {
+            // Jika tidak ada pesan yang dimuat, anggap ada pesan jika ada pesan di DB.
+            $this->hasMoreMessages = Message::where('chat_id', $this->chat->id)->exists();
+            return;
+        }
+
+        // Hitung pesan yang lebih lama dari oldestLoadedMessageId
+        $count = Message::where('chat_id', $this->chat->id)
+            ->where('id', '<', $this->oldestLoadedMessageId)
+            ->count();
+
+        $this->hasMoreMessages = $count > 0;
     }
 
     /**
@@ -98,12 +235,22 @@ new class extends Component {
      */
     public function forceRefresh(): void
     {
-        $this->messagesCache = $this->loadMessages();
-        $latestMessage = $this->messagesCache->first();
+        // Muat batch pesan terbaru
+        $this->messagesCache = $this->loadLatestMessages();
+        
+        $latestMessage = $this->messagesCache->last();
 
         if ($latestMessage) {
             $this->lastMessageId = $latestMessage->id;
         }
+        
+        // Atur ulang oldestLoadedMessageId ke ID pesan paling lama di batch baru
+        $this->oldestLoadedMessageId = $this->messagesCache->first()->id ?? null;
+        
+        $this->checkHasMoreMessages();
+        
+        // Mark as read after refresh
+        $this->markChatNotificationsAsRead();
     }
 
     /**
@@ -114,6 +261,7 @@ new class extends Component {
         return [
             'forceRefresh' => 'forceRefresh',
             'refreshMessages' => 'refreshMessages',
+            'loadMoreMessages' => 'loadMoreMessages',
         ];
     }
 
@@ -182,7 +330,7 @@ new class extends Component {
     }
 
     /**
-     * Refresh messages from database
+     * Refresh messages from database (only check for new messages)
      */
     public function refreshMessages(): void
     {
@@ -198,13 +346,22 @@ new class extends Component {
 
             $this->updateUserLastAccess();
 
-            // Only trigger updates if there are new messages
+            // Hanya picu update jika ada pesan baru
             if ($this->hasNewMessages($latestMessage)) {
-                $this->lastMessageId = $latestMessage->id;
-                $this->messagesCache = $this->loadMessages();
-                $this->markChatNotificationsAsRead();
-                
-                $this->dispatch('new-messages-loaded');
+                // Muat hanya pesan baru
+                $newMessages = Message::where('chat_id', $this->chat->id)
+                    ->where('id', '>', $this->lastMessageId)
+                    ->with(['user', 'taggedUsers'])
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                if ($newMessages->isNotEmpty()) {
+                    $this->lastMessageId = $latestMessage->id;
+                    $this->messagesCache = $this->messagesCache->concat($newMessages);
+                    $this->markChatNotificationsAsRead();
+                    
+                    $this->dispatch('new-messages-loaded');
+                }
             }
         } catch (\Exception $e) {
             Log::error('Error refreshing messages', [
@@ -223,7 +380,7 @@ new class extends Component {
      */
     private function hasNewMessages($latestMessage): bool
     {
-        // Only consider new messages that are NOT sent by the current user
+        // Hanya pertimbangkan pesan baru yang BUKAN dikirim oleh pengguna saat ini
         return $latestMessage
             && $latestMessage->id > $this->lastMessageId
             && $latestMessage->user_id !== Auth::id();
@@ -235,11 +392,6 @@ new class extends Component {
     public function setUserAtBottom($isAtBottom): void
     {
         $this->isUserAtBottom = $isAtBottom;
-        
-        // Hide notification if user scrolled to bottom
-        if ($isAtBottom) {
-            $this->showNewMessageNotification = false;
-        }
     }
 };
 
@@ -248,11 +400,35 @@ new class extends Component {
 <div class="space-y-6 chat-background" wire:poll.3s="refreshMessages" id="messages-container"
     wire:key="chat-container-{{ $chat->id }}">
 
+    {{-- Loading More Indicator --}}
+    @if($hasMoreMessages)
+        <div class="flex justify-center py-4" id="load-more-trigger">
+            <div wire:loading.remove wire:target="loadMoreMessages">
+                <button 
+                    wire:click="loadMoreMessages"
+                    class="px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 rounded-full shadow-md hover:shadow-lg transition-all duration-200 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-gray-700">
+                    <svg class="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                    </svg>
+                    Muat pesan sebelumnya
+                </button>
+            </div>
+            <div wire:loading wire:target="loadMoreMessages" class="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400">
+                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm font-medium">Memuat...</span>
+            </div>
+        </div>
+    @endif
+
     @php $prevDate = null; @endphp
     @forelse ($this->messages as $message)
         @php
             $isOwnMessage = $message->user_id === Auth::id();
-            $isReaded = $message->readed_at !== null;
+            // Anda mungkin perlu memastikan kolom 'readed_at' ada atau menggunakan logika read receipt lain
+            $isReaded = $message->readed_at !== null; 
             $currentDate = $message->created_at->toDateString();
         @endphp
 
@@ -275,7 +451,10 @@ new class extends Component {
         @endif
 
         {{-- Message Bubble --}}
-        <div class="transition-all duration-200 animate-slide-in" wire:key="message-wrapper-{{ $message->id }}">
+        <div class="transition-all duration-200 animate-slide-in" 
+             wire:key="message-wrapper-{{ $message->id }}"
+             data-message-id="{{ $message->id }}"
+             data-is-readed="{{ $isReaded ? 'true' : 'false' }}">
             @livewire(
                 'chat._components.show.partials.message',
                 [
@@ -303,17 +482,14 @@ new class extends Component {
         </div>
     @endforelse
 
-
-
     <style>
-        /* ==================== CSS Variables ==================== */
+        /* ... (CSS tetap sama) ... */
         :root {
             --whatsapp-green: #25D366;
             --whatsapp-green-dark: #20BD5F;
             --emerald-glow: rgba(16, 185, 129, 0.3);
         }
 
-        /* ==================== Chat Background ==================== */
         .chat-background {
             background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
             background-image:
@@ -330,133 +506,34 @@ new class extends Component {
                 url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2310b981' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
-        /* ==================== Keyframe Animations ==================== */
         @keyframes slide-in {
             from {
                 opacity: 0;
                 transform: translateY(20px) scale(0.95);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
             }
         }
 
-        @keyframes fade-in-slow {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0px);
-            }
-
-            50% {
-                transform: translateY(-6px);
-            }
-        }
-
         @keyframes bounce-slow {
-
-            0%,
-            100% {
+            0%, 100% {
                 transform: translateY(0);
             }
-
             50% {
                 transform: translateY(-15px);
             }
         }
 
-        @keyframes bounce-in {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, 20px) scale(0.8);
-            }
-            60% {
-                opacity: 1;
-                transform: translate(-50%, -5px) scale(1.05);
-            }
-            100% {
-                opacity: 1;
-                transform: translate(-50%, 0) scale(1);
-            }
-        }
-
-        @keyframes pulse-slow {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        /* ==================== Animation Classes ==================== */
         .animate-slide-in {
             animation: slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .animate-fade-in-slow {
-            animation: fade-in-slow 0.8s ease-out;
-        }
-
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
         }
 
         .animate-bounce-slow {
             animation: bounce-slow 2s ease-in-out infinite;
         }
 
-        .animate-pulse-slow {
-            animation: pulse-slow 2s ease-in-out infinite;
-        }
-
-        .animate-bounce-in {
-            animation: bounce-in 0.4s ease-out forwards;
-        }
-
-        /* ==================== Message Bubble Effects ==================== */
-        .message-bubble {
-            backdrop-filter: blur(10px);
-            position: relative;
-            z-index: 1;
-        }
-
-        .message-bubble::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: inherit;
-            padding: 2px;
-            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .message-bubble:hover::before {
-            opacity: 1;
-        }
-
-        /* ==================== Custom Scrollbar ==================== */
         #messages-container::-webkit-scrollbar {
             width: 8px;
         }
@@ -478,23 +555,17 @@ new class extends Component {
             background-clip: padding-box;
         }
 
-        /* ==================== Dark Mode Scrollbar ==================== */
         .dark #messages-container::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.05);
         }
     </style>
 
     <script>
-        /**
-         * Initialize Livewire event listeners and handlers
-         */
         document.addEventListener('livewire:init', () => {
             let scrollTimeout;
-            let isScrolling = false;
+            // Variabel untuk menyimpan tinggi scroll sebelum memuat pesan lama
+            let previousScrollHeight = 0; 
 
-            /**
-             * Function to scroll to bottom of messages container
-             */
             window.scrollToBottom = function() {
                 const container = document.getElementById('messages-container');
                 if (container) {
@@ -505,56 +576,82 @@ new class extends Component {
                 }
             };
 
-            /**
-             * Check if user is at bottom of messages container
-             */
             function isUserAtBottom() {
                 const container = document.getElementById('messages-container');
                 if (!container) return true;
                 
-                const threshold = 50; // pixels from bottom
+                // Threshold 50px
+                const threshold = 50; 
                 return (container.scrollTop + container.clientHeight >= container.scrollHeight - threshold);
             }
 
-            /**
-             * Update user scroll position in Livewire component
-             */
+            function isUserAtTop() {
+                const container = document.getElementById('messages-container');
+                if (!container) return false;
+                // Batas 150px untuk memicu pemuatan lebih awal saat scroll ke atas
+                return container.scrollTop <= 150; 
+            }
+
             function updateScrollPosition() {
                 const atBottom = isUserAtBottom();
                 @this.setUserAtBottom(atBottom);
             }
 
-            /**
-             * Handle scroll events on messages container
-             */
             const container = document.getElementById('messages-container');
             if (container) {
+                // Track scroll position for lazy loading
                 container.addEventListener('scroll', function() {
                     clearTimeout(scrollTimeout);
                     scrollTimeout = setTimeout(() => {
                         updateScrollPosition();
-                    }, 100);
+                        
+                        // Auto-load more messages when near top
+                        if (isUserAtTop() && @this.hasMoreMessages && !@this.isLoadingMore) {
+                            // **Penting:** Catat tinggi scroll sebelum memuat pesan lama
+                            previousScrollHeight = container.scrollHeight;
+                            @this.loadMoreMessages();
+                        }
+                    }, 100); // Debounce
                 });
 
-                // Initial scroll position check
                 updateScrollPosition();
             }
 
-            /**
-             * Handle new messages loaded event
-             */
+            // Handle new messages loaded
             Livewire.on('new-messages-loaded', () => {
-                // Auto-scroll if user was at bottom
                 setTimeout(() => {
                     if (isUserAtBottom()) {
                         scrollToBottom();
                     }
+                    // Opsi lain: tampilkan tombol "Pesan Baru" jika tidak di bawah
                 }, 100);
             });
 
-            /**
-             * Livewire error handling hooks
-             */
+            // Handle older messages loaded - maintain scroll position
+            Livewire.on('older-messages-loaded', (data) => {
+                setTimeout(() => {
+                    const container = document.getElementById('messages-container');
+                    if (container) {
+                        // Cari pesan yang ID-nya dikirim (pesan paling atas sebelum batch baru)
+                        const oldTopMessage = container.querySelector(`[data-message-id="${data.oldestMessageId}"]`);
+                        
+                        if (oldTopMessage) {
+                            // Scroll ke elemen lama untuk mempertahankan posisi
+                            oldTopMessage.scrollIntoView({ block: 'start' });
+                            // Tambahan kecil (misalnya 5px) untuk kenyamanan
+                            container.scrollTop -= 5; 
+                        } else {
+                            // Fallback: Pertahankan posisi relatif berdasarkan selisih tinggi scroll
+                            const newScrollHeight = container.scrollHeight;
+                            const scrollDiff = newScrollHeight - previousScrollHeight;
+                            if (scrollDiff > 0) {
+                               container.scrollTop += scrollDiff;
+                            }
+                        }
+                    }
+                }, 50); // Set timeout singkat untuk menunggu DOM diperbarui
+            });
+
             Livewire.hook('message.failed', (message, component) => {
                 console.error('Livewire message failed:', {
                     message: message,
@@ -562,110 +659,77 @@ new class extends Component {
                     timestamp: new Date().toISOString()
                 });
             });
-
-            Livewire.hook('message.processed', (message, component) => {
-                console.debug('Livewire message processed:', component.id);
-            });
-
-            /**
-             * Handle component errors
-             */
-            Livewire.hook('element.init', ({
-                component,
-                el
-            }) => {
-                if (!component.snapshot) {
-                    console.warn('Component initialized without snapshot:', component.id);
-                }
-            });
         });
 
-        // Initial scroll setup when page loads
+        // Initial scroll setup (menggulir ke bawah atau ke pesan yang belum dibaca)
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const container = document.getElementById('messages-container');
                 if (container) {
-                    // Find the first unread message
                     const firstUnreadElement = container.querySelector('[data-is-readed="false"]');
 
                     if (firstUnreadElement) {
-                        // Scroll to the first unread message
                         firstUnreadElement.scrollIntoView({
                             behavior: 'smooth',
                             block: 'center'
                         });
                     } else {
-                        // No unread messages, scroll to bottom
                         scrollToBottom();
                     }
                 }
             }, 200);
         });
 
-        /**
-         * Handle page visibility changes to optimize polling
-         */
+        // Force refresh saat tab kembali aktif
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                console.log('Page hidden, reducing polling frequency');
-            } else {
-                console.log('Page visible, resuming normal polling');
-
-                if (window.Livewire) {
-                    setTimeout(() => {
-                        try {
-                            Livewire.dispatch('forceRefresh');
-                        } catch (error) {
-                            console.error('Error dispatching forceRefresh:', error);
-                        }
-                    }, 500);
-                }
-            }
-        });
-
-        /**
-         * Prevent memory leaks on page unload
-         */
-        window.addEventListener('beforeunload', () => {
-            if (window.Livewire) {
-                // Clean up any pending operations
-                console.log('Cleaning up Livewire components');
+            if (!document.hidden && window.Livewire) {
+                setTimeout(() => {
+                    try {
+                        Livewire.dispatch('forceRefresh');
+                    } catch (error) {
+                        console.error('Error dispatching forceRefresh:', error);
+                    }
+                }, 500);
             }
         });
     </script>
 
-    {{-- Scroll ke bawah saat ada pesan baru dan pengguna berada di bagian bawah --}}
+    {{-- Script untuk auto scroll yang lebih modern (menggantikan logika lama) --}}
     <script>
-        function scrollToBottomWhenUserIsAtBottomAndNewMessagesLoaded() {
+        document.addEventListener('livewire:initialized', () => {
             const container = document.getElementById('messages-container');
-            // Mendeteksi apakah container ada perubahan di dalamnya
-            const observer = new MutationObserver(() => {
-                if (container) {
-                    const threshold = container.scrollHeight * 0.005; // 0.5% dari bawah
-                    const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold;
-                    // console.log('Is user at bottom (0.5%)?', isAtBottom);
-                    if (isAtBottom) {
-                        container.scrollTo({
-                            top: container.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    } else {
-                        // console.log('User is not at bottom, not auto-scrolling.');
-                        // Mungkin tampilkan notifikasi atau indikator pesan baru di sini
-                        const element = document.getElementById('new-message-received');
-                        if (element) {
-                            element.classList.remove('hidden');
+            if (container) {
+                // Gunakan MutationObserver untuk memantau penambahan pesan baru ke DOM
+                const observer = new MutationObserver((mutationsList, observer) => {
+                    for(const mutation of mutationsList) {
+                        if (mutation.type === 'childList') {
+                            // Periksa apakah ada pesan baru yang ditambahkan (kecuali pemuatan lama)
+                            if (mutation.addedNodes.length > 0) {
+                                
+                                // Jika pengguna berada di bagian bawah, auto-scroll.
+                                const threshold = container.scrollHeight * 0.005;
+                                const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold;
+                                
+                                if (isAtBottom) {
+                                    container.scrollTo({
+                                        top: container.scrollHeight,
+                                        behavior: 'smooth'
+                                    });
+                                } 
+                                // Di sini Anda bisa menambahkan logika untuk menampilkan "Pesan Baru" jika tidak di bawah
+                            }
                         }
                     }
-                }
-            });
-            observer.observe(container, {
-                childList: true,
-                subtree: true
-            });
-        }
-        setTimeout(() => {
-            scrollToBottomWhenUserIsAtBottomAndNewMessagesLoaded();
-        }, 3000);
+                });
+                
+                // Mulai observasi pada container dengan konfigurasi:
+                // childList: true (mengamati penambahan/penghapusan elemen anak langsung)
+                // subtree: true (mengamati semua keturunan dari elemen target)
+                observer.observe(container, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        });
     </script>
 </div>
