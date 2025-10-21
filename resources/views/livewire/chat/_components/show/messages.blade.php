@@ -423,12 +423,18 @@ new class extends Component {
         </div>
     @endif
 
-    @php $prevDate = null; @endphp
+    @php 
+        $prevDate = null;
+        // Get user's latest accessed time for this chat to determine unread messages
+        $userLatestAccess = Auth::user()->chatUsers()
+            ->where('chat_id', $this->chat->id)
+            ->value('latest_accessed_at');
+    @endphp
     @forelse ($this->messages as $message)
         @php
             $isOwnMessage = $message->user_id === Auth::id();
-            // Anda mungkin perlu memastikan kolom 'readed_at' ada atau menggunakan logika read receipt lain
-            $isReaded = $message->readed_at !== null; 
+            // Determine if message is read based on user's latest access time
+            $isReaded = $isOwnMessage || ($userLatestAccess && $userLatestAccess >= $message->created_at);
             $currentDate = $message->created_at->toDateString();
         @endphp
 
@@ -661,19 +667,23 @@ new class extends Component {
             });
         });
 
-        // Initial scroll setup (menggulir ke bawah atau ke pesan yang belum dibaca)
+        // Initial scroll setup (menggulir ke pesan belum dibaca terakhir atau ke bawah)
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const container = document.getElementById('messages-container');
                 if (container) {
-                    const firstUnreadElement = container.querySelector('[data-is-readed="false"]');
-
-                    if (firstUnreadElement) {
-                        firstUnreadElement.scrollIntoView({
+                    // Find all unread messages
+                    const unreadElements = container.querySelectorAll('[data-is-readed="false"]');
+                    
+                    if (unreadElements.length > 0) {
+                        // Get the last unread message
+                        const lastUnreadElement = unreadElements[unreadElements.length - 1];
+                        lastUnreadElement.scrollIntoView({
                             behavior: 'smooth',
                             block: 'center'
                         });
                     } else {
+                        // No unread messages, scroll to bottom
                         scrollToBottom();
                     }
                 }
