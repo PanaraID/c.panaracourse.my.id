@@ -10,7 +10,17 @@ use App\Events\MessageSent;
 
 class Message extends Model
 {
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'chat_id',
+        'user_id', 
+        'content',
+        'is_edited',
+        'edited_at',
+        'file_path',
+        'file_name',
+        'file_type',
+        'file_size',
+    ];
 
     protected $attributes = [
         'is_edited' => false,
@@ -19,6 +29,8 @@ class Message extends Model
     protected $casts = [
         'readed_at' => 'datetime',
         'file_size' => 'integer',
+        'is_edited' => 'boolean',
+        'edited_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -61,5 +73,16 @@ class Message extends Model
         return $this->belongsToMany(User::class, 'message_tags', 'message_id', 'tagged_user_id')
                     ->withPivot(['tagged_by_user_id', 'is_read', 'created_at'])
                     ->withTimestamps();
+    }
+
+    /**
+     * Mark this message as edited.
+     */
+    public function markAsEdited(): void
+    {
+        $this->update([
+            'is_edited' => true,
+            'edited_at' => now(),
+        ]);
     }
 }

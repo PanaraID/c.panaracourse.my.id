@@ -95,7 +95,7 @@ test('it can be marked as edited', function () {
 });
 
 test('it has correct fillable attributes', function () {
-    $fillable = ['chat_id', 'user_id', 'content', 'is_edited', 'edited_at'];
+    $fillable = ['chat_id', 'user_id', 'content', 'is_edited', 'edited_at', 'file_path', 'file_name', 'file_type', 'file_size'];
     
     $message = new Message();
     
