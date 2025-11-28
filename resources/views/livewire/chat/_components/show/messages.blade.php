@@ -600,7 +600,9 @@ new class extends Component {
 
             function updateScrollPosition() {
                 const atBottom = isUserAtBottom();
-                @this.setUserAtBottom(atBottom);
+                if (typeof @this !== 'undefined' && typeof @this.setUserAtBottom === 'function') {
+                    @this.setUserAtBottom(atBottom);
+                }
             }
 
             const container = document.getElementById('messages-container');
