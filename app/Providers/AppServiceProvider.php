@@ -26,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register logout event listener
         Event::listen(Logout::class, LogUserLogout::class);
+        
+        // Register message sent event listener
+        Event::listen(
+            \App\Events\MessageSent::class,
+            \App\Listeners\SendMessageNotification::class
+        );
+        
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
 }

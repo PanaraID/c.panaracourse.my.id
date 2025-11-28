@@ -96,6 +96,16 @@ class Notification extends Model
                 'related_chat_id' => $chat->id,
                 'related_message_id' => $message->id,
             ]);
+
+            $recipient->sendPushNotification(
+                "Ada pesan dari {$sender->name}",
+                \Str::limit($message->content, 100),
+                [
+                    'url' => route('chat.show', ['chat' => $chat->slug]),
+                    'chat_slug' => $chat->slug,
+                    'message_id' => $message->id,
+                ]
+            );
         }
     }
 }

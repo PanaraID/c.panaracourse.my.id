@@ -254,7 +254,10 @@ new class extends Component {
             // Commit transaction
             DB::commit();
 
-            // 6️⃣ Log aktivitas
+            // 6️⃣ Trigger MessageSent event for push notifications
+            event(new \App\Events\MessageSent($message));
+
+            // 7️⃣ Log aktivitas
             Log::info('Message sent successfully', [
                 'message_id' => $message->id,
                 'chat_id' => $this->chat->id,
@@ -265,10 +268,10 @@ new class extends Component {
                 'has_file' => $this->fileAttachment ? true : false,
             ]);
 
-            // 7️⃣ Update state
+            // 8️⃣ Update state
             $this->lastMessageId = $message->id;
 
-            // 8️⃣ Dispatch events
+            // 9️⃣ Dispatch events
             $this->dispatch('new-message-sent', 
                 chatTitle: $this->chat->title, 
                 userName: Auth::user()->name ?? 'Pengguna', 
@@ -277,7 +280,7 @@ new class extends Component {
 
             $this->dispatch('message-sent');
 
-            // 9️⃣ Reset input form
+            // 🔟 Reset input form
             $this->reset(['newMessage', 'taggedUsers', 'fileAttachment']);
             $this->showTagModal = false;
 

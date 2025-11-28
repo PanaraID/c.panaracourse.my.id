@@ -55,3 +55,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/frontend-logs/stats', [FrontendLogController::class, 'stats'])->name('frontend-logs.stats');
     Route::delete('/frontend-logs/cleanup', [FrontendLogController::class, 'cleanup'])->name('frontend-logs.cleanup');
 });
+
+// Push Subscription API Routes
+use App\Http\Controllers\Api\PushSubscriptionController;
+
+Route::get('/push/public-key', [PushSubscriptionController::class, 'publicKey'])->name('push.public-key');
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+});

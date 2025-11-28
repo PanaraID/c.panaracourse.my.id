@@ -16,6 +16,6 @@ class MessageObserver
         Notification::createForNewMessage($message);
 
         // Dispatch event to send browser notification
-        SendBrowserNotificationEvent::dispatch($message);
+        // SendBrowserNotificationEvent::dispatch($message);
     }
 }

@@ -143,29 +143,91 @@ async function requestNotificationPermission() {
         console.log('[Notification] Permission granted');
         
         // Subscribe to push notifications
-        navigator.serviceWorker.ready.then(async (registration) => {
-            try {
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: 'BCuyibSSOEa2kZN_576JLcQDr12BUAQjhavSziBBJuUkCbysAfCdPfjIoUHoIBeGxgD6BO2hb9YpjN_mm5nlglE'
-                });
-                console.log('[Notification] Push subscription successful:', subscription);
-                // Send subscription to server if needed
-            } catch (error) {
-                console.error('[Notification] Push subscription failed:', error.message);
-            }
-        });
-// Public Key:
-
-
-// Private Key:
-// eJ7szp49X_YzXQ8Xr7Cx169IEaL79qMvp_VIEy7aKo4
+        await subscribeToPushNotifications();
+        
         return true;
     } catch (error) {
         console.error('[Notification] Permission error:', error.message);
         return false;
     }
 }
+
+async function subscribeToPushNotifications() {
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Get existing subscription
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (!subscription) {
+            // Fetch VAPID public key from server
+            const response = await fetch('/api/push/public-key');
+            const { publicKey } = await response.json();
+            
+            // Create new subscription
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicKey)
+            });
+            
+            console.log('[Push] New subscription created:', subscription);
+        } else {
+            console.log('[Push] Existing subscription found:', subscription);
+        }
+        
+        // Send subscription to server
+        await sendSubscriptionToServer(subscription);
+        
+    } catch (error) {
+        console.error('[Push] Subscription failed:', error.message);
+    }
+}
+
+async function sendSubscriptionToServer(subscription) {
+    try {
+        const token = getToken();
+        if (!token) {
+            console.warn('[Push] No auth token, skipping subscription sync');
+            return;
+        }
+        
+        const response = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(subscription.toJSON())
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('[Push] Subscription saved to server:', data);
+        } else {
+            console.error('[Push] Failed to save subscription:', response.status);
+        }
+    } catch (error) {
+        console.error('[Push] Failed to send subscription to server:', error.message);
+    }
+}
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 
 function getToken() {
     const { userId } = document.body.dataset || {};

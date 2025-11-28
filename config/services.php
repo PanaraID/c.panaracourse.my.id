@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'vapid' => [
+        'subject' => env('VAPID_SUBJECT', env('APP_URL')),
+        'public_key' => env('VAPID_PUBLIC_KEY', 'BCuyibSSOEa2kZN_576JLcQDr12BUAQjhavSziBBJuUkCbysAfCdPfjIoUHoIBeGxgD6BO2hb9YpjN_mm5nlglE'),
+        'private_key' => env('VAPID_PRIVATE_KEY', 'eJ7szp49X_YzXQ8Xr7Cx169IEaL79qMvp_VIEy7aKo4'),
+    ],
+
 ];

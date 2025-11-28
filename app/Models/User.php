@@ -149,4 +149,22 @@ class User extends Authenticatable
                     ->orderByDesc('created_at')
                     ->limit(10);
     }
+
+    /**
+     * Get all push subscriptions for this user
+     */
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
+    /**
+     * Send push notification to all user's devices
+     */
+    public function sendPushNotification(string $title, string $body, array $data = []): void
+    {
+        foreach ($this->pushSubscriptions as $subscription) {
+            $subscription->sendPushNotification($title, $body, $data);
+        }
+    }
 }

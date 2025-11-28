@@ -173,11 +173,57 @@ Script ini akan menjalankan:
 # Build assets untuk production
 npm run build
 
+# Jalankan queue worker di background (pastikan queue berjalan untuk push notifications)
+php artisan queue:work --daemon
+
 # Jalankan horizon untuk queue monitoring
 php artisan horizon
 
 # Setup web server (Nginx/Apache) untuk serve aplikasi
 ```
+
+> **⚠️ Penting:** Queue worker harus selalu berjalan untuk push notifications bekerja!
+
+## 🔔 Web Push Notifications
+
+### Cara Kerja
+
+Sistem push notifications mengirim notifikasi langsung ke browser bahkan ketika tab ditutup atau aplikasi tidak sedang dibuka.
+
+**Flow:**
+1. User login → Request permission → Subscribe ke push
+2. Subscription disimpan ke database
+3. Ada pesan baru → Event `MessageSent` triggered
+4. Listener `SendMessageNotification` mengirim push via WebPush library
+5. Service Worker terima push → Tampilkan browser notification
+
+### Testing Push Notifications
+
+```bash
+# Test push notification untuk user tertentu
+php artisan push:test 1
+
+# Test push notification untuk semua users
+php artisan push:test
+```
+
+### Troubleshooting
+
+**Notifikasi tidak muncul saat tab ditutup?**
+- Pastikan queue worker berjalan: `php artisan queue:work`
+- Check subscription tersimpan di database: `select * from push_subscriptions;`
+- Lihat logs: `tail -f storage/logs/laravel.log | grep "Push"`
+
+**Permission ditolak?**
+- Di browser settings, izinkan notifications untuk domain Anda
+- Clear browser cache dan coba lagi
+
+**Subscription gagal?**
+- Check VAPID keys di `.env` sudah benar
+- Service Worker harus aktif (check di DevTools > Application > Service Workers)
+
+Dokumentasi lengkap: [Web Push Notifications](docs/WEB_PUSH_NOTIFICATIONS.md)
+
 
 ## 📱 Fitur PWA
 

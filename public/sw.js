@@ -162,20 +162,50 @@ function doBackgroundSync() {
 
 // Push notifications
 self.addEventListener('push', event => {
-  console.log('Push notification received');
+  console.log('[Service Worker] Push notification received', event);
   
-  const options = {
-    body: event.data ? event.data.text() : 'Notifikasi baru dari Panara Course',
+  let notificationData = {
+    title: 'Panara Course',
+    body: 'Notifikasi baru dari Panara Course',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
-    vibrate: [100, 50, 100],
+    url: '/',
+  };
+
+  // Parse the push notification payload
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = {
+        title: data.title || notificationData.title,
+        body: data.body || notificationData.body,
+        icon: data.icon || notificationData.icon,
+        badge: data.badge || notificationData.badge,
+        url: data.data?.url || notificationData.url,
+        tag: data.data?.chat_slug || 'default',
+        data: data.data || {},
+      };
+    } catch (e) {
+      console.error('[Service Worker] Failed to parse push data', e);
+      notificationData.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
+    vibrate: [200, 100, 200],
+    tag: notificationData.tag,
+    requireInteraction: false,
     data: {
+      url: notificationData.url,
       dateOfArrival: Date.now(),
-      primaryKey: 1
+      ...notificationData.data,
     },
     actions: [
       {
-        action: 'explore',
+        action: 'open',
         title: 'Buka',
         icon: '/icons/icon-72x72.png'
       },
@@ -188,26 +218,39 @@ self.addEventListener('push', event => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Panara Course', options)
+    self.registration.showNotification(notificationData.title, options)
   );
 });
 
 // Notification click handler
 self.addEventListener('notificationclick', event => {
-  console.log('Notification click received.');
+  console.log('[Service Worker] Notification click received', event);
 
   event.notification.close();
 
-  if (event.action === 'explore') {
+  const urlToOpen = event.notification.data?.url || '/';
+
+  if (event.action === 'open' || !event.action) {
+    // Open or focus the app window
     event.waitUntil(
-      clients.openWindow('/')
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(windowClients => {
+          // Check if there's already a window open
+          for (let i = 0; i < windowClients.length; i++) {
+            const client = windowClients[i];
+            if (client.url === urlToOpen && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          // If no window is open, open a new one
+          if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+          }
+        })
     );
   } else if (event.action === 'close') {
-    // Just close the notification
-  } else {
-    // Default action - open the app
-    event.waitUntil(
-      clients.openWindow('/')
-    );
+    // Just close the notification (already done above)
+    console.log('[Service Worker] Notification dismissed');
   }
 });
+
