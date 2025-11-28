@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Events\NotificationSent;
+use App\Events\NotificationSentEvent;
 
 class Notification extends Model
 {
@@ -19,7 +19,7 @@ class Notification extends Model
     {
         static::created(function (Notification $notification) {
             // Trigger the NotificationSent event (without broadcasting)
-            event(new NotificationSent($notification));
+            event(new NotificationSentEvent($notification));
         });
     }
 

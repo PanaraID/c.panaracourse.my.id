@@ -11,9 +11,6 @@ class MessageObserver
     {
         logger()->info("MessageObserver: Message ID {$message->id} has been created.");
 
-        // Load the user relationship for future use
-        $message->load('user');
-
         // Create notifications for other members
         Notification::createForNewMessage($message);
 
