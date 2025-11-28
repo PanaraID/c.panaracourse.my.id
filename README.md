@@ -12,7 +12,6 @@
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-12.x-red.svg" alt="Laravel Version"></a>
   <a href="https://livewire.laravel.com"><img src="https://img.shields.io/badge/Livewire-3.x-blue.svg" alt="Livewire Version"></a>
   <a href="https://www.php.net"><img src="https://img.shields.io/badge/PHP-8.2+-purple.svg" alt="PHP Version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
 </p>
 
 ---
@@ -96,8 +95,8 @@ Komunitas Panara Course adalah platform chat real-time yang dibangun khusus untu
 
 4. **Setup Database**
    ```bash
-   # Buat file database SQLite (jika menggunakan SQLite)
-   touch database/database.sqlite
+   # Jalankan docker compose
+   docker compose up -d
 
    # Jalankan migrasi
    php artisan migrate
@@ -117,6 +116,15 @@ Komunitas Panara Course adalah platform chat real-time yang dibangun khusus untu
    ```
 
 ## 🔧 Konfigurasi
+
+### Web Push Notifications Setup
+
+Generate VAPID keys untuk push notifications:
+
+```bash
+npm install web-push -g
+web-push generate-vapid-keys [--json]
+```
 
 ### Environment Variables
 
@@ -141,15 +149,6 @@ REDIS_PORT=6379
 # Web Push Notifications
 VAPID_PUBLIC_KEY=your_public_key
 VAPID_PRIVATE_KEY=your_private_key
-```
-
-### Web Push Notifications Setup
-
-Generate VAPID keys untuk push notifications:
-
-```bash
-npm install web-push -g
-web-push generate-vapid-keys [--json]
 ```
 
 ## 🏃 Menjalankan Aplikasi
@@ -350,60 +349,6 @@ Jika menemukan security vulnerability, mohon laporkan ke:
    # Setup supervisor untuk queue worker
    php artisan queue:work --daemon
    ```
-
-4. **Setup Web Server (Nginx Example)**
-   ```nginx
-   server {
-       listen 80;
-       server_name c.panaracourse.my.id;
-       root /path-to-app/public;
-
-       add_header X-Frame-Options "SAMEORIGIN";
-       add_header X-Content-Type-Options "nosniff";
-
-       index index.php;
-
-       charset utf-8;
-
-       location / {
-           try_files $uri $uri/ /index.php?$query_string;
-       }
-
-       location ~ \.php$ {
-           fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-           fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-           include fastcgi_params;
-       }
-
-       location ~ /\.(?!well-known).* {
-           deny all;
-       }
-   }
-   ```
-
-## 🤝 Contributing
-
-Kontribusi sangat diterima! Silakan:
-
-1. Fork repository
-2. Buat branch fitur (`git checkout -b feature/AmazingFeature`)
-3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
-5. Buat Pull Request
-
-## 📄 License
-
-Aplikasi ini dilisensikan di bawah [MIT License](LICENSE).
-
-## 👨‍💻 Developer
-
-Dikembangkan dengan ❤️ oleh [Panara Course Team](https://github.com/PanaraID)
-
-## 📞 Kontak & Support
-
-- Website: [https://c.panaracourse.my.id](https://c.panaracourse.my.id)
-- Email: support@panaracourse.my.id
-- GitHub Issues: [Report Bug/Request Feature](https://github.com/PanaraID/c.panaracourse.my.id/issues)
 
 ---
 
