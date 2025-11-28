@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\MessageSent;
 use App\Models\Notification;
 
 class MessageObserver
@@ -17,6 +18,7 @@ class MessageObserver
         Notification::createForNewMessage($message);
 
         // // Trigger the MessageSent event (without broadcasting)
-        event(new \App\Events\MessageSent($message));
+        // MessageSent::dispatch($message);
+        // event(new \App\Events\MessageSent($message));
     }
 }
