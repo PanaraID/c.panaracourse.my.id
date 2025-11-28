@@ -1,4 +1,12 @@
 services:
+  mysql:
+    image: mysql:latest
+    container_name: panara_community_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: your_root_password
+      MYSQL_DATABASE: panara_community_db
+      MYSQL_USER: panara_user
+      MYSQL_PASSWORD: your_password
   redis:
     image: redis:latest
     container_name: panara_community_redis
