@@ -7,6 +7,8 @@ services:
       MYSQL_DATABASE: panara_community_db
       MYSQL_USER: panara_user
       MYSQL_PASSWORD: your_password
+    ports:
+      - "3306:3306"
   redis:
     image: redis:latest
     container_name: panara_community_redis
