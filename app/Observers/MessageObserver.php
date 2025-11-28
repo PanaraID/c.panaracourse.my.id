@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Events\MessageSent;
+use App\Events\SendBrowserNotificationEvent;
 use App\Models\Notification;
 
 class MessageObserver
@@ -14,8 +15,7 @@ class MessageObserver
         // Create notifications for other members
         Notification::createForNewMessage($message);
 
-        // // Trigger the MessageSent event (without broadcasting)
-        // MessageSent::dispatch($message);
-        // event(new \App\Events\MessageSent($message));
+        // Dispatch event to send browser notification
+        SendBrowserNotificationEvent::dispatch($message);
     }
 }
