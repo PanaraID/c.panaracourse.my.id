@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Observers\MessageObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Events\MessageSent;
 
+#[ObservedBy(MessageObserver::class)]
 class Message extends Model
 {
     protected $fillable = [
@@ -35,16 +38,7 @@ class Message extends Model
 
     protected static function booted(): void
     {
-        static::created(function (Message $message) {
-            // Load the user relationship for future use
-            $message->load('user');
-            
-            // Create notifications for other members
-            \App\Models\Notification::createForNewMessage($message);
-            
-            // Trigger the MessageSent event (without broadcasting)
-            event(new MessageSent($message));
-        });
+
     }
 
     public function chat(): BelongsTo
