@@ -13,9 +13,4 @@ class UserPolicy
     {
         //
     }
-
-    public function viewHorizon(User $user): bool
-    {
-        
-    }
 }
