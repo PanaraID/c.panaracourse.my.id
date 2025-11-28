@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Chat;
+use App\Models\Message;
+use App\Models\User;
 use Illuminate\Console\Command;
 
 class SimulateChattingCommand extends Command
@@ -54,5 +56,19 @@ class SimulateChattingCommand extends Command
         $chats = Chat::where(['is_active' => true])->get();
         $this->info('Found ' . $chats->count() . ' active chats to simulate.');
         logger()->info('Found ' . $chats->count() . ' active chats to simulate.');
+
+        $chats->each(function ($chat) use ($messages) {
+            // Simulate sending a random message to each chat
+            $randomMessage = $messages[array_rand($messages)];
+           
+            $this->info("Chat ID {$chat->id}: {$randomMessage}");
+            logger()->info("Chat ID {$chat->id}: {$randomMessage}");
+
+            Message::create([
+                'chat_id' => $chat->id,
+                'user_id' => 1, // System message
+                'content' => $randomMessage,
+            ]);
+        });
     }
 }
