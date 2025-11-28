@@ -141,6 +141,25 @@ async function requestNotificationPermission() {
             return false;
         }
         console.log('[Notification] Permission granted');
+        
+        // Subscribe to push notifications
+        navigator.serviceWorker.ready.then(async (registration) => {
+            try {
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: 'BCuyibSSOEa2kZN_576JLcQDr12BUAQjhavSziBBJuUkCbysAfCdPfjIoUHoIBeGxgD6BO2hb9YpjN_mm5nlglE'
+                });
+                console.log('[Notification] Push subscription successful:', subscription);
+                // Send subscription to server if needed
+            } catch (error) {
+                console.error('[Notification] Push subscription failed:', error.message);
+            }
+        });
+// Public Key:
+
+
+// Private Key:
+// eJ7szp49X_YzXQ8Xr7Cx169IEaL79qMvp_VIEy7aKo4
         return true;
     } catch (error) {
         console.error('[Notification] Permission error:', error.message);
@@ -198,4 +217,4 @@ console.log('[App] Initializing app.js');
 registerServiceWorker();
 setupInstallPrompt();
 setupOnlineOfflineListeners();
-// setupNotifications();
+setupNotifications();
