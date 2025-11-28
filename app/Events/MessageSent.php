@@ -19,4 +19,9 @@ class MessageSent
     {
         $this->message = $message;
     }
+
+    public function broadcastOn()
+    {
+        return [];
+    }
 }
