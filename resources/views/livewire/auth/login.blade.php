@@ -27,6 +27,13 @@ new #[Layout('components.layouts.auth.modern')] class extends Component {
      */
     public function login(): void
     {
+        // Debug: Log input values
+        logger()->debug('Login attempt', [
+            'email' => $this->email,
+            'password_length' => strlen($this->password),
+            'remember' => $this->remember
+        ]);
+
         $this->validate();
 
         $this->ensureIsNotRateLimited();
@@ -146,10 +153,10 @@ new #[Layout('components.layouts.auth.modern')] class extends Component {
                     </svg>
                 </div>
                 <input
-                    wire:model.live="email"
+                    wire:model="email"
                     id="email"
                     type="email"
-                    required
+                    name="email"
                     autofocus
                     autocomplete="email"
                     placeholder="nama@email.com"
@@ -178,10 +185,10 @@ new #[Layout('components.layouts.auth.modern')] class extends Component {
                     </svg>
                 </div>
                 <input
-                    wire:model.live="password"
+                    wire:model="password"
                     id="password"
+                    name="password"
                     type="password"
-                    required
                     autocomplete="current-password"
                     placeholder="••••••••"
                     class="form-input block w-full pl-10 pr-12 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200"
