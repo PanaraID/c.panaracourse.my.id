@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
-use App\Http\Controllers\Admin\LogDashboardController;
 
 // Route::get('/', function () {
 //     return view('welcome');
