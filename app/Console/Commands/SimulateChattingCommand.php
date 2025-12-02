@@ -43,6 +43,9 @@ class SimulateChattingCommand extends Command
         $this->info('Simulating chatting...');
         logger()->info('Simulating chatting...');
 
+        $howMany = $this->ask('How many messages to simulate per chat?');
+        $chatId = $this->ask('Enter the chat ID to simulate messages for:');
+
         // Example messages
         $messages = [
             'Hello! How can I help you today?',
@@ -53,22 +56,22 @@ class SimulateChattingCommand extends Command
         ];
 
         // Get active chats
-        $chats = Chat::where(['is_active' => true])->get();
-        $this->info('Found ' . $chats->count() . ' active chats to simulate.');
-        logger()->info('Found ' . $chats->count() . ' active chats to simulate.');
+        $chat = Chat::find($chatId);
+        $this->info('Found 1 active chat to simulate.');
+        logger()->info('Found 1 active chat to simulate.');
 
-        $chats->each(function ($chat) use ($messages) {
-            // Simulate sending a random message to each chat
-            $randomMessage = $messages[array_rand($messages)];
-           
-            $this->info("Chat ID {$chat->id}: {$randomMessage}");
-            logger()->info("Chat ID {$chat->id}: {$randomMessage}");
+       // Simulate sending a random message to each chat
+        $randomMessage = $messages[array_rand($messages)];
+        
+        $this->info("Chat ID {$chat->id}: {$randomMessage}");
+        logger()->info("Chat ID {$chat->id}: {$randomMessage}");
 
+        for ($i = 0; $i < $howMany; $i++) {
             Message::create([
                 'chat_id' => $chat->id,
                 'user_id' => 1, // System message
-                'content' => $randomMessage,
+                'content' => $randomMessage . ' ' . ($i + 1),
             ]);
-        });
+        }
     }
 }
