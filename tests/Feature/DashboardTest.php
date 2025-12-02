@@ -10,9 +10,9 @@ beforeEach(function () {
     Artisan::call('db:seed', ['--class' => 'RoleAndPermissionSeeder']);
 });
 
-test('guests are redirected to the login page', function () {
+test('guests are redirected to the chat index', function () {
     $response = $this->get(route('dashboard'));
-    $response->assertRedirect(route('login'));
+    $response->assertRedirect(route('chat.index'));
 });
 
 test('authenticated users can visit the dashboard', function () {
