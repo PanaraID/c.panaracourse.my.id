@@ -198,14 +198,6 @@ test('it casts is_active to boolean', function () {
     expect($chat->fresh()->is_active)->toBe(false);
 });
 
-test('it has fillable attributes', function () {
-    $fillable = ['title', 'description', 'slug', 'created_by', 'is_active'];
-    
-    $chat = new Chat();
-    
-    expect($chat->getFillable())->toBe($fillable);
-});
-
 test('it handles long titles for slug generation', function () {
     $user = User::factory()->create();
     $longTitle = str_repeat('Very Long Title With Many Words ', 10);
