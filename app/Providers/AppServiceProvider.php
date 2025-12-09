@@ -9,8 +9,6 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Auth\Events\Logout;
 use App\Listeners\LogUserLogout;
-use Laravel\Sanctum\PersonalAccessToken;
-use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,8 +36,6 @@ class AppServiceProvider extends ServiceProvider
             \App\Events\MessageSent::class,
             \App\Listeners\SendMessageNotification::class
         );
-        
-        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
     
     /**
