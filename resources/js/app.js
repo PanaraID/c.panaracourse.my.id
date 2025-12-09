@@ -1,194 +1,194 @@
 import './bootstrap';
 import './pwa-install';
 
-// Global message handling for chat (without real-time broadcasting)
+// Penanganan pesan global untuk chat (tanpa siaran real-time)
 window.currentUserId = null;
 
-// --- PWA Service Worker Registration ---
-function registerServiceWorker() {
+// --- Registrasi Service Worker PWA ---
+function daftarkanServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
 
     window.addEventListener('load', async () => {
         try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('[PWA] Service Worker registered:', registration.scope);
+            const registrasi = await navigator.serviceWorker.register('/sw.js');
+            console.log('[PWA] Service Worker berhasil didaftarkan:', registrasi.scope);
 
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[PWA] Update available');
-                        showUpdateAvailable();
+            registrasi.addEventListener('updatefound', () => {
+                const pekerjaBaru = registrasi.installing;
+                pekerjaBaru.addEventListener('statechange', () => {
+                    if (pekerjaBaru.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('[PWA] Pembaruan tersedia');
+                        tampilkanNotifikasiUpdate();
                     }
                 });
             });
         } catch (error) {
-            console.error('[PWA] Service Worker registration failed:', error.message);
+            console.error('[PWA] Gagal mendaftarkan Service Worker:', error.message);
         }
     });
 }
 
-// --- PWA Install Prompt ---
-let deferredPrompt = null;
-let installButton = null;
+// --- Prompt Instalasi PWA ---
+let promptTertunda = null;
+let tombolInstal = null;
 
-function setupInstallPrompt() {
+function siapkanPromptInstalasi() {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
-        deferredPrompt = e;
-        console.log('[PWA] Install prompt available');
-        showInstallButton();
+        promptTertunda = e;
+        console.log('[PWA] Prompt instalasi tersedia');
+        tampilkanTombolInstal();
     });
 
     window.addEventListener('appinstalled', () => {
-        console.log('[PWA] App installed');
-        hideInstallButton();
+        console.log('[PWA] Aplikasi berhasil diinstal');
+        sembunyikanTombolInstal();
     });
 }
 
-function showInstallButton() {
+function tampilkanTombolInstal() {
     if (window.location.pathname.startsWith('/chat')) return;
-    if (installButton || !document.body) return;
+    if (tombolInstal || !document.body) return;
 
-    installButton = document.createElement('button');
-    installButton.innerHTML = `
+    tombolInstal = document.createElement('button');
+    tombolInstal.innerHTML = `
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7,10 12,15 17,10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-        Install App
+        Instal Aplikasi
     `;
-    installButton.className = 'pwa-install-btn';
-    installButton.style.cssText = `
+    tombolInstal.className = 'pwa-install-btn';
+    tombolInstal.style.cssText = `
         position: fixed; bottom: 20px; right: 20px; background: #000; color: white;
         border: none; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: 500;
         cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center;
         gap: 8px; z-index: 1000; transition: all 0.3s ease; transform: translateY(100px); opacity: 0;
     `;
-    installButton.addEventListener('click', installPWA);
-    document.body.appendChild(installButton);
+    tombolInstal.addEventListener('click', instalPWA);
+    document.body.appendChild(tombolInstal);
 
     setTimeout(() => {
-        installButton.style.transform = 'translateY(0)';
-        installButton.style.opacity = '1';
+        tombolInstal.style.transform = 'translateY(0)';
+        tombolInstal.style.opacity = '1';
     }, 100);
 }
 
-async function installPWA() {
-    if (!deferredPrompt) return;
+async function instalPWA() {
+    if (!promptTertunda) return;
     try {
-        const result = await deferredPrompt.prompt();
-        if (result.outcome === 'accepted') {
-            console.log('[PWA] User accepted install');
-            hideInstallButton();
+        const hasil = await promptTertunda.prompt();
+        if (hasil.outcome === 'accepted') {
+            console.log('[PWA] Pengguna menerima instalasi');
+            sembunyikanTombolInstal();
         } else {
-            console.log('[PWA] User dismissed install');
+            console.log('[PWA] Pengguna menolak instalasi');
         }
-        deferredPrompt = null;
+        promptTertunda = null;
     } catch (error) {
-        console.error('[PWA] Install error:', error.message);
+        console.error('[PWA] Kesalahan instalasi:', error.message);
     }
 }
 
-function hideInstallButton() {
-    if (!installButton) return;
-    installButton.style.transform = 'translateY(100px)';
-    installButton.style.opacity = '0';
+function sembunyikanTombolInstal() {
+    if (!tombolInstal) return;
+    tombolInstal.style.transform = 'translateY(100px)';
+    tombolInstal.style.opacity = '0';
     setTimeout(() => {
-        if (installButton.parentNode) installButton.parentNode.removeChild(installButton);
-        installButton = null;
+        if (tombolInstal.parentNode) tombolInstal.parentNode.removeChild(tombolInstal);
+        tombolInstal = null;
     }, 300);
 }
 
-// --- Update Notification ---
-function showUpdateAvailable() {
-    const updateNotification = document.createElement('div');
-    updateNotification.innerHTML = `
+// --- Notifikasi Pembaruan ---
+function tampilkanNotifikasiUpdate() {
+    const notifikasiUpdate = document.createElement('div');
+    notifikasiUpdate.innerHTML = `
         <div style="padding:16px; background:#000; color:white; position:fixed; top:20px; right:20px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:1001; max-width:300px;">
-            <p style="margin:0 0 12px 0; font-size:14px;">Update tersedia untuk aplikasi ini</p>
-            <button id="update-now-btn" style="background:white; color:black; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:500;">Update Sekarang</button>
-            <button id="update-later-btn" style="background:transparent; color:white; border:1px solid rgba(255,255,255,0.3); padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; margin-left:8px;">Nanti</button>
+            <p style="margin:0 0 12px 0; font-size:14px;">Terdapat pembaruan untuk aplikasi ini</p>
+            <button id="update-now-btn" style="background:white; color:black; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:500;">Perbarui Sekarang</button>
+            <button id="update-later-btn" style="background:transparent; color:white; border:1px solid rgba(255,255,255,0.3); padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; margin-left:8px;">Nanti Saja</button>
         </div>
     `;
-    document.body.appendChild(updateNotification);
+    document.body.appendChild(notifikasiUpdate);
 
-    updateNotification.querySelector('#update-now-btn').onclick = () => {
-        console.log('[PWA] User chose to update now');
+    notifikasiUpdate.querySelector('#update-now-btn').onclick = () => {
+        console.log('[PWA] Pengguna memilih perbarui sekarang');
         window.location.reload();
     };
-    updateNotification.querySelector('#update-later-btn').onclick = () => {
-        console.log('[PWA] User postponed update');
-        updateNotification.remove();
+    notifikasiUpdate.querySelector('#update-later-btn').onclick = () => {
+        console.log('[PWA] Pengguna menunda pembaruan');
+        notifikasiUpdate.remove();
     };
 
-    setTimeout(() => updateNotification.remove(), 3000);
+    setTimeout(() => notifikasiUpdate.remove(), 3000);
 }
 
-// --- Online/Offline Status ---
-function setupOnlineOfflineListeners() {
-    window.addEventListener('online', () => console.log('[Network] Online'));
-    window.addEventListener('offline', () => console.log('[Network] Offline'));
+// --- Status Online/Offline ---
+function siapkanListenerOnlineOffline() {
+    window.addEventListener('online', () => console.log('[Jaringan] Anda terhubung'));
+    window.addEventListener('offline', () => console.log('[Jaringan] Anda sedang offline'));
 }
 
-// --- Notification Handling ---
-async function requestNotificationPermission() {
+// --- Penanganan Notifikasi ---
+async function mintaIzinNotifikasi() {
     try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
+        const izin = await Notification.requestPermission();
+        if (izin !== 'granted') {
             alert('⚠️ Izin notifikasi ditolak. Silakan aktifkan notifikasi untuk pengalaman terbaik.');
-            console.warn('[Notification] Permission denied');
+            console.warn('[Notifikasi] Izin ditolak');
             return false;
         }
-        console.log('[Notification] Permission granted');
+        console.log('[Notifikasi] Izin diberikan');
         
-        // Subscribe to push notifications
-        await subscribeToPushNotifications();
+        // Berlangganan push notification
+        await langgananPushNotification();
         
         return true;
     } catch (error) {
-        console.error('[Notification] Permission error:', error.message);
+        console.error('[Notifikasi] Kesalahan izin:', error.message);
         return false;
     }
 }
-requestNotificationPermission();
+mintaIzinNotifikasi();
 
-async function subscribeToPushNotifications() {
+async function langgananPushNotification() {
     try {
-        const registration = await navigator.serviceWorker.ready;
+        const registrasi = await navigator.serviceWorker.ready;
         
-        // Get existing subscription
-        let subscription = await registration.pushManager.getSubscription();
+        // Cek langganan yang sudah ada
+        let langganan = await registrasi.pushManager.getSubscription();
         
-        if (!subscription) {
-            // Fetch VAPID public key from server
+        if (!langganan) {
+            // Ambil VAPID public key dari server
             const response = await fetch('/api/push/public-key');
             const { publicKey } = await response.json();
             
-            // Create new subscription
-            subscription = await registration.pushManager.subscribe({
+            // Buat langganan baru
+            langganan = await registrasi.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(publicKey)
+                applicationServerKey: ubahBase64KeUint8Array(publicKey)
             });
             
-            console.log('[Push] New subscription created:', subscription);
+            console.log('[Push] Langganan baru dibuat:', langganan);
         } else {
-            console.log('[Push] Existing subscription found:', subscription);
+            console.log('[Push] Langganan sudah ada:', langganan);
         }
         
-        // Send subscription to server
-        await sendSubscriptionToServer(subscription);
+        // Kirim langganan ke server
+        await kirimLanggananKeServer(langganan);
         
     } catch (error) {
-        console.error('[Push] Subscription failed:', error.message);
+        console.error('[Push] Gagal berlangganan:', error.message);
     }
 }
 
-async function sendSubscriptionToServer(subscription) {
+async function kirimLanggananKeServer(langganan) {
     try {
-        const token = getToken();
+        const token = ambilToken();
         if (!token) {
-            console.warn('[Push] No auth token, skipping subscription sync');
+            console.warn('[Push] Tidak ada token auth, langganan tidak dikirim');
             return;
         }
         
@@ -199,22 +199,22 @@ async function sendSubscriptionToServer(subscription) {
                 'Accept': 'application/json',
                 'Authorization': 'Bearer ' + token
             },
-            body: JSON.stringify(subscription.toJSON())
+            body: JSON.stringify(langganan.toJSON())
         });
         
         if (response.ok) {
             const data = await response.json();
-            console.log('[Push] Subscription saved to server:', data);
+            console.log('[Push] Langganan berhasil disimpan di server:', data);
         } else {
-            console.error('[Push] Failed to save subscription:', response.status);
+            console.error('[Push] Gagal menyimpan langganan:', response.status);
         }
     } catch (error) {
-        console.error('[Push] Failed to send subscription to server:', error.message);
+        console.error('[Push] Gagal mengirim langganan ke server:', error.message);
     }
 }
 
-// Helper function to convert VAPID key
-function urlBase64ToUint8Array(base64String) {
+// Fungsi bantu untuk mengubah VAPID key
+function ubahBase64KeUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
         .replace(/\-/g, '+')
@@ -229,19 +229,18 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-
-function getToken() {
+function ambilToken() {
     const { userId } = document.body.dataset || {};
     if (!userId) {
         alert('⚠️ Ada kesalahan fatal. Silakan login ulang.');
-        console.error('[Auth] User token missing');
+        console.error('[Auth] Token pengguna tidak ditemukan');
         return null;
     }
     return userId;
 }
 
-// --- Init ---
-console.log('[App] Initializing app.js');
-registerServiceWorker();
-setupInstallPrompt();
-setupOnlineOfflineListeners();
+// --- Inisialisasi ---
+console.log('[Aplikasi] Inisialisasi app.js');
+daftarkanServiceWorker();
+siapkanPromptInstalasi();
+siapkanListenerOnlineOffline();
