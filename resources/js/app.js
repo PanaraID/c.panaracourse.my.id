@@ -239,44 +239,8 @@ function getToken() {
     return userId;
 }
 
-async function fetchNotifications() {
-    const token = getToken();
-    if (!token) return;
-    try {
-        const res = await fetch('/api/notifications', {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const notif = data.notification;
-        if (notif) {
-            new Notification('Hai, kamu punya notifikasi baru!', {
-                body: notif.message,
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
-            });
-            console.log('[Notification] New notification received');
-        }
-    } catch (err) {
-        console.error('[Notification] Fetch error:', err.message);
-        if (err.message.includes('401')) localStorage.removeItem('user_token');
-    }
-}
-
-async function setupNotifications() {
-    if (await requestNotificationPermission()) {
-        setInterval(function() {
-            console.log('[Notification] Checking for new notifications...');
-            if (window.location.pathname !== '/login') {
-                fetchNotifications();
-            }
-        }, 3000);
-    }
-}
-
 // --- Init ---
 console.log('[App] Initializing app.js');
 registerServiceWorker();
 setupInstallPrompt();
 setupOnlineOfflineListeners();
-setupNotifications();
