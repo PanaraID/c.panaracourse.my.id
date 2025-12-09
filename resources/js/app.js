@@ -151,6 +151,7 @@ async function requestNotificationPermission() {
         return false;
     }
 }
+requestNotificationPermission();
 
 async function subscribeToPushNotifications() {
     try {

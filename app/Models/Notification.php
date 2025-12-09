@@ -75,9 +75,14 @@ class Notification extends Model
     {
         $chat = $message->chat;
         $sender = $message->user;
+        logger()->info("Creating notifications for new message ID {$message->id} in chat ID {$chat->id} from user ID {$sender->id}");
         
         // Get all chat members except the sender
-        $recipients = $chat->members()->where('users.id', '!=', $sender->id)->get();
+        $recipients = $chat->members()->get();
+        $recipients = $recipients->filter(function ($user) use ($sender) {
+            return $user->id !== $sender->id;
+        });
+        logger()->info("Found " . $recipients->count() . " recipients for the notification.");
         
         foreach ($recipients as $recipient) {
             static::create([
@@ -96,6 +101,15 @@ class Notification extends Model
                 'related_chat_id' => $chat->id,
                 'related_message_id' => $message->id,
             ]);
+
+            logger()->info("Send push notification to user ID {$recipient->id} for new message ID {$message->id}");
+
+            $subscriptions = $recipient->pushSubscriptions;
+            if ($subscriptions->isEmpty()) {
+                logger()->warning("  ⚠ recipient #{$recipient->id} ({$recipient->name}) has no push subscriptions");
+                continue;
+            }
+            logger()->info("  📱 recipient #{$recipient->id} ({$recipient->name}) - {$subscriptions->count()} subscription(s)");
 
             $recipient->sendPushNotification(
                 "Ada pesan dari {$sender->name}",
