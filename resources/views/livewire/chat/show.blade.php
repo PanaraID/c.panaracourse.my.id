@@ -1,3 +1,11 @@
+{{--
+    Chat Show Page
+    
+    Halaman untuk menampilkan detail chat dan pesan-pesan dalam chat.
+    User dapat mengirim pesan, melihat riwayat pesan, dan berinteraksi dengan member lain.
+    Layout: Header (info chat) → Messages (isi percakapan) → Input (mengirim pesan)
+--}}
+
 <?php
 
 use function Livewire\Volt\{computed, state, on, mount};
@@ -14,6 +22,9 @@ new
 class extends \Livewire\Volt\Component {
     public ?Chat $chat = null;
 
+    /**
+     * Mount dan validasi akses user ke chat
+     */
     public function mount(Chat $chat)
     {
         if (!$chat->members->contains(Auth::user()) && !Auth::user()->hasRole('admin')) {

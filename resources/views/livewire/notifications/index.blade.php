@@ -1,3 +1,11 @@
+{{--
+    Notifications Index Page
+    
+    Halaman untuk melihat semua notifikasi user.
+    Menampilkan notifikasi dengan pagination (20 per halaman).
+    User dapat menandai notifikasi sebagai sudah dibaca atau menghapusnya.
+--}}
+
 <?php
 
 use function Livewire\Volt\{computed, state, on, mount};
@@ -6,6 +14,9 @@ use Illuminate\Support\Facades\Auth;
 
 state(['lastNotificationId' => 0]);
 
+/**
+ * Hitung notifikasi dengan tracking ID terbaru
+ */
 $notifications = computed(function () {
     $notifications = Auth::user()->notifications()->latest()->paginate(20);
     
@@ -17,6 +28,9 @@ $notifications = computed(function () {
     return $notifications;
 });
 
+/**
+ * Tandai notifikasi sebagai sudah dibaca
+ */
 $markAsRead = function ($notificationId) {
     $notification = Notification::where('user_id', Auth::id())->where('id', $notificationId)->first();
 

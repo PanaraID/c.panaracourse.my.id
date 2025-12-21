@@ -1,3 +1,11 @@
+{{--
+    Two Factor Challenge Page
+    
+    Halaman untuk verifikasi 2FA menggunakan TOTP atau recovery codes.
+    User dapat memilih untuk login dengan authentication code atau recovery code.
+    Keamanan berlapis untuk melindungi akun dari unauthorized access.
+--}}
+
 <x-layouts.auth>
     <div class="flex flex-col gap-6">
         <div

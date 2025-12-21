@@ -1,3 +1,11 @@
+{{--
+    Login Page
+    
+    Halaman untuk autentikasi user dengan email dan password.
+    Mendukung rate limiting untuk mencegah brute force attacks.
+    Fitur: Remember me, forgot password link, error messages.
+--}}
+
 <?php
 
 use App\Models\User;

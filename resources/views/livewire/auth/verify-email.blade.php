@@ -1,3 +1,11 @@
+{{--
+    Verify Email Page
+    
+    Halaman untuk verifikasi email setelah registrasi.
+    User menerima email verification link dan dapat mengirim ulang link.
+    Email harus diverifikasi untuk mengakses aplikasi sepenuhnya.
+--}}
+
 <?php
 
 use App\Livewire\Actions\Logout;

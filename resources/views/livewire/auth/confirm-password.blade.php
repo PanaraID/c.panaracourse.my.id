@@ -1,3 +1,11 @@
+{{--
+    Confirm Password Page
+    
+    Halaman untuk konfirmasi password saat mengakses area sensitif.
+    User harus memasukkan password untuk melanjutkan akses ke fitur tertentu.
+    Untuk keamanan tambahan dari unauthorized access.
+--}}
+
 <x-layouts.auth>
     <div class="flex flex-col gap-6">
         <x-auth-header

@@ -1,3 +1,11 @@
+{{--
+    Dashboard Page
+    
+    Halaman dashboard untuk user authenticated.
+    Menampilkan welcome message dan overview fitur utama aplikasi.
+    Tempat terpusat untuk navigasi ke fitur-fitur lain.
+--}}
+
 <?php
 
 use Livewire\Attributes\{Layout};
@@ -6,6 +14,9 @@ use Livewire\Volt\Component;
 new
 #[Layout('components.layouts.app')]
 class extends Component {
+    /**
+     * Log dashboard page visit
+     */
     public function mount()
     {
         logger()->info('Home page visited');

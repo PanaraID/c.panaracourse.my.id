@@ -1,3 +1,11 @@
+{{--
+    Delete User Form Page
+    
+    Halaman untuk menghapus akun user secara permanen.
+    User harus memasukkan password untuk konfirmasi dan mengakui tindakan ini tidak bisa dibatalkan.
+    Penghapusan melibuti logout otomatis setelah akun dihapus.
+--}}
+
 <?php
 
 use App\Livewire\Actions\Logout;

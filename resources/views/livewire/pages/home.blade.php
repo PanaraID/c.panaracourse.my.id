@@ -1,3 +1,11 @@
+{{--
+    Home Page
+    
+    Halaman utama welcome untuk user yang sudah authenticated.
+    Menampilkan informasi platform dan fitur-fitur utama yang tersedia.
+    User dapat langsung mengakses chat rooms dan fitur lainnya dari sini.
+--}}
+
 <?php
 
 use Livewire\Attributes\{Layout};
@@ -6,6 +14,9 @@ use Livewire\Volt\Component;
 new
 #[Layout('layouts.base')]
 class extends Component {
+    /**
+     * Log home page visit
+     */
     public function mount()
     {
         logger()->info('Home page visited');

@@ -1,3 +1,11 @@
+{{--
+    Chat Manage Page
+    
+    Halaman untuk mengelola anggota chat dan detail chat.
+    Admin atau pembuat chat dapat menambah/menghapus member, mengupdate informasi chat.
+    Fitur: pencarian user, tambah member, hapus member, edit chat info.
+--}}
+
 <?php
 
 use App\Models\Chat;
@@ -14,6 +22,9 @@ new class extends \Livewire\Volt\Component {
     public string $title = '';
     public string $description = '';
 
+    /**
+     * Mount dan validasi akses
+     */
     public function mount(Chat $chat): void
     {
         // Check if user can manage this chat

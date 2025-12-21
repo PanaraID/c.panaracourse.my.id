@@ -1,3 +1,11 @@
+{{--
+    Forgot Password Page
+    
+    Halaman untuk meminta reset password link.
+    User memasukkan email dan menerima link reset password via email.
+    Link berisi token yang aman dan berlaku 60 menit.
+--}}
+
 <?php
 
 use Illuminate\Support\Facades\Password;

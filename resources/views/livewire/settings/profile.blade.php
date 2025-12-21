@@ -1,3 +1,11 @@
+{{--
+    Profile Settings Page
+    
+    Halaman untuk mengupdate profil user (nama dan email).
+    User dapat mengganti nama dan email dengan validasi unik untuk email.
+    Perubahan dicatat dalam logs untuk audit trail.
+--}}
+
 <?php
 
 use App\Models\User;

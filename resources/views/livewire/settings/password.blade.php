@@ -1,3 +1,11 @@
+{{--
+    Password Settings Page
+    
+    Halaman untuk mengubah password user.
+    User harus memasukkan password lama dan password baru (dengan konfirmasi).
+    Password divalidasi dengan rules keamanan: minimal 8 karakter dan kombinasi yang kuat.
+--}}
+
 <?php
 
 use Illuminate\Support\Facades\Auth;

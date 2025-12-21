@@ -1,3 +1,11 @@
+{{--
+    Appearance Settings Page
+    
+    Halaman untuk mengatur tampilan aplikasi (Light/Dark/System mode).
+    Preferensi user disimpan dan diterapkan pada setiap sesi.
+    Mendukung 3 mode: Light (terang), Dark (gelap), System (mengikuti sistem).
+--}}
+
 <?php
 
 use Livewire\Volt\Component;

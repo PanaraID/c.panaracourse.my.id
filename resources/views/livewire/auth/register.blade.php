@@ -1,3 +1,11 @@
+{{--
+    Register Page
+    
+    Halaman untuk registrasi user baru dengan email dan password.
+    Validasi input dilakukan sisi server dengan Laravel Fortify.
+    Setelah berhasil, user diarahkan ke halaman verifikasi email jika diperlukan.
+--}}
+
 <?php
 
 use App\Models\User;

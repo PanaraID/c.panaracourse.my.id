@@ -1,3 +1,11 @@
+{{--
+    Reset Password Page
+    
+    Halaman untuk reset password dengan token dari email.
+    User memasukkan password baru dan password confirmation.
+    Token divalidasi untuk memastikan keamanan proses reset.
+--}}
+
 <?php
 
 use Illuminate\Auth\Events\PasswordReset;

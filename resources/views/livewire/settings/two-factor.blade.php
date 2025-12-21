@@ -1,3 +1,11 @@
+{{--
+    Two Factor Authentication Settings Page
+    
+    Halaman untuk setup dan manage 2FA menggunakan TOTP (Time-based One-Time Password).
+    User dapat enable/disable 2FA dan menyimpan recovery codes untuk backup.
+    Keamanan berlapis untuk melindungi akun dari unauthorized access.
+--}}
+
 <?php
 
 use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;

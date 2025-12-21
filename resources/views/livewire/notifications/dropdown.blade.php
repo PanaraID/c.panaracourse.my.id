@@ -1,3 +1,11 @@
+{{--
+    Notifications Dropdown Component
+    
+    Komponen dropdown untuk menampilkan notifikasi terbaru (10 notifikasi terakhir).
+    Dapat toggle dropdown, menandai notifikasi sebagai dibaca, dan navigasi ke halaman lengkap.
+    Real-time update saat ada notifikasi baru dari event listener.
+--}}
+
 <?php
 
 use function Livewire\Volt\{computed, state, on, mount};
@@ -6,6 +14,9 @@ use Illuminate\Support\Facades\Auth;
 
 state(['showDropdown' => false, 'lastNotificationId' => 0]);
 
+/**
+ * Hitung notifikasi terbaru dengan limit 10
+ */
 $notifications = computed(function () {
     $notifications = Auth::user()->notifications()
         ->latest()
