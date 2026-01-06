@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Events\NotificationSentEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Events\NotificationSentEvent;
 
 class Notification extends Model
 {
@@ -12,7 +12,7 @@ class Notification extends Model
 
     protected $casts = [
         'data' => 'array',
-        'read_at' => 'datetime'
+        'read_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -45,7 +45,7 @@ class Notification extends Model
 
     public function isRead(): bool
     {
-        return !is_null($this->read_at);
+        return ! is_null($this->read_at);
     }
 
     public function scopeUnread($query)
@@ -76,20 +76,20 @@ class Notification extends Model
         $chat = $message->chat;
         $sender = $message->user;
         logger()->info("Creating notifications for new message ID {$message->id} in chat ID {$chat->id} from user ID {$sender->id}");
-        
+
         // Get all chat members except the sender
         $recipients = $chat->members()->get();
         $recipients = $recipients->filter(function ($user) use ($sender) {
             return $user->id !== $sender->id;
         });
-        logger()->info("Found " . $recipients->count() . " recipients for the notification.");
-        
+        logger()->info('Found '.$recipients->count().' recipients for the notification.');
+
         foreach ($recipients as $recipient) {
             static::create([
                 'user_id' => $recipient->id,
                 'type' => 'new_message',
                 'title' => "Ada pesan dari {$sender->name}",
-                'message' => "Pesan: " . \Str::limit($message->content, 100),
+                'message' => 'Pesan: '.\Str::limit($message->content, 100),
                 'data' => [
                     'chat_slug' => $chat->slug,
                     'chat_title' => $chat->title,
@@ -102,24 +102,6 @@ class Notification extends Model
                 'related_message_id' => $message->id,
             ]);
 
-            logger()->info("Send push notification to user ID {$recipient->id} for new message ID {$message->id}");
-
-            $subscriptions = $recipient->pushSubscriptions;
-            if ($subscriptions->isEmpty()) {
-                logger()->warning("  ⚠ recipient #{$recipient->id} ({$recipient->name}) has no push subscriptions");
-                continue;
-            }
-            logger()->info("  📱 recipient #{$recipient->id} ({$recipient->name}) - {$subscriptions->count()} subscription(s)");
-
-            $recipient->sendPushNotification(
-                "Ada pesan dari {$sender->name}",
-                \Str::limit($message->content, 100),
-                [
-                    'url' => route('chat.show', ['chat' => $chat->slug]),
-                    'chat_slug' => $chat->slug,
-                    'message_id' => $message->id,
-                ]
-            );
         }
     }
 }

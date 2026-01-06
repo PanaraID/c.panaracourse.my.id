@@ -4,19 +4,19 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, HasApiTokens;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -91,7 +91,7 @@ class User extends Authenticatable
             ->where('chat_id', $message->chat_id)
             ->first();
 
-        if (!$chatUser || !$chatUser->latest_accessed_at) {
+        if (! $chatUser || ! $chatUser->latest_accessed_at) {
             return false;
         }
 
@@ -144,27 +144,9 @@ class User extends Authenticatable
     public function recentUnreadMessageTags(): HasMany
     {
         return $this->messageTags()
-                    ->where('is_read', false)
-                    ->with(['message.chat', 'taggedByUser'])
-                    ->orderByDesc('created_at')
-                    ->limit(10);
-    }
-
-    /**
-     * Get all push subscriptions for this user
-     */
-    public function pushSubscriptions(): HasMany
-    {
-        return $this->hasMany(PushSubscription::class);
-    }
-
-    /**
-     * Send push notification to all user's devices
-     */
-    public function sendPushNotification(string $title, string $body, array $data = []): void
-    {
-        foreach ($this->pushSubscriptions as $subscription) {
-            $subscription->sendPushNotification($title, $body, $data);
-        }
+            ->where('is_read', false)
+            ->with(['message.chat', 'taggedByUser'])
+            ->orderByDesc('created_at')
+            ->limit(10);
     }
 }
