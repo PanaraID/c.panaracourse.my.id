@@ -233,7 +233,7 @@ new class extends Component {
             // Simpan tags jika ada
             if (!empty($this->taggedUsers)) {
                 // Validasi tagged users adalah members
-    validTaggedUsers = $this->chat->members()
+                $validTaggedUsers = $this->chat->members()
                     ->whereIn('users.id', $this->taggedUsers)
                     ->pluck('users.id')
                     ->toArray();
