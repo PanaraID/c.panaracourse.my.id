@@ -149,7 +149,7 @@ new class extends Component {
      */
     public function sendMessage(): void
     {
-        // 1️⃣ Sanitasi awal
+        //  Sanitasi awal
         $this->newMessage = trim($this->newMessage);
 
         // Validasi: harus ada pesan atau file
@@ -158,7 +158,7 @@ new class extends Component {
             return;
         }
 
-        // 2️⃣ Validasi isi pesan (jika ada)
+        //  Validasi isi pesan (jika ada)
         if (Str::length($this->newMessage) > 0) {
             $this->validate([
                 'newMessage' => [
@@ -178,28 +178,29 @@ new class extends Component {
             ]);
         }
 
-        // 2.5️⃣ Validasi file (jika ada)
+        //  Validasi file (jika ada)
         if ($this->fileAttachment) {
             $this->validate([
                 'fileAttachment' => 'file|max:1048576', // Max 1GB (1024 * 1024 KB)
             ], [
                 'fileAttachment.file' => 'File tidak valid.',
-                'fileAttachment.max' => '⚠️ Ukuran file melebihi batas maksimal 1 GB. Silakan pilih file yang lebih kecil.',
+                'fileAttachment.max' => ' Ukuran file melebihi batas maksimal 1 GB. Silakan pilih file yang lebih kecil.',
                 'fileAttachment.mimes' => 'Tipe file tidak diizinkan.',
                 'fileAttachment.max.file' => 'Ukuran file melebihi batas maksimal 1 GB.',
             ]);
         }
 
-        // 3️⃣ Validasi user adalah member dari chat
+        //  Validasi user adalah member dari chat
         if (!$this->chat->members()->where('users.id', Auth::id())->exists()) {
             $this->addError('newMessage', 'Anda tidak memiliki akses untuk mengirim pesan di chat ini.');
             return;
         }
 
-        // 4️⃣ Simpan pesan
+        //  Validasi akhir
         $content = $this->newMessage ?: '[File Attachment]';
         $content = str_replace(["\r\n", "\r", "\n"], '<br>', $content);
 
+        //  Simpan pesan ke database dalam transaksi
         try {
             // Begin transaction
             DB::beginTransaction();
@@ -229,10 +230,10 @@ new class extends Component {
 
             $message = Message::create($messageData);
 
-            // 5️⃣ Simpan tags jika ada
+            // Simpan tags jika ada
             if (!empty($this->taggedUsers)) {
                 // Validasi tagged users adalah members
-                $validTaggedUsers = $this->chat->members()
+    validTaggedUsers = $this->chat->members()
                     ->whereIn('users.id', $this->taggedUsers)
                     ->pluck('users.id')
                     ->toArray();
@@ -254,10 +255,10 @@ new class extends Component {
             // Commit transaction
             DB::commit();
 
-            // 6️⃣ Trigger MessageSent event for push notifications
+            // Trigger MessageSent event for push notifications
             event(new \App\Events\MessageSent($message));
 
-            // 7️⃣ Log aktivitas
+            // Log aktivitas
             Log::info('Message sent successfully', [
                 'message_id' => $message->id,
                 'chat_id' => $this->chat->id,
@@ -268,10 +269,10 @@ new class extends Component {
                 'has_file' => $this->fileAttachment ? true : false,
             ]);
 
-            // 8️⃣ Update state
+            //  Update state
             $this->lastMessageId = $message->id;
 
-            // 9️⃣ Dispatch events
+            //  Dispatch events
             $this->dispatch('new-message-sent', 
                 chatTitle: $this->chat->title, 
                 userName: Auth::user()->name ?? 'Pengguna', 
@@ -280,7 +281,7 @@ new class extends Component {
 
             $this->dispatch('message-sent');
 
-            // 🔟 Reset input form
+            //  Reset input form
             $this->reset(['newMessage', 'taggedUsers', 'fileAttachment']);
             $this->showTagModal = false;
 
@@ -305,7 +306,7 @@ new class extends Component {
 ?>
 
 <!-- ======================== -->
-<!-- 💬 FORM INPUT PESAN -->
+<!--  FORM INPUT PESAN -->
 <!-- ======================== -->
 
 <div class="sticky bottom-0 z-10 bg-slate-400 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 shadow-xl px-4 sm:px-6 py-4 w-full max-w-full overflow-hidden"
@@ -314,7 +315,7 @@ new class extends Component {
     data-chat-id="{{ $chat->id }}">
 
     <!-- ======================== -->
-    <!-- 🏷️ PESERTA YANG DITAG -->
+    <!--  PESERTA YANG DITAG -->
     <!-- ======================== -->
     <div class="mb-3 flex items-center justify-between">
         @if (count($taggedUsers) > 0)
@@ -374,7 +375,7 @@ new class extends Component {
                                 }
                             @endphp
                             @if($fileSize > 1073741824)
-                                <span class="ml-1 text-red-600 dark:text-red-400 font-bold">⚠️ Melebihi 1 GB!</span>
+                                <span class="ml-1 text-red-600 dark:text-red-400 font-bold"> Melebihi 1 GB!</span>
                             @endif
                         </p>
                     </div>
@@ -395,7 +396,7 @@ new class extends Component {
             class="hidden"
             accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar">
 
-        <!-- 📝 Input Pesan - PLAIN TEXT TEXTAREA -->
+        <!--  Input Pesan - PLAIN TEXT TEXTAREA -->
         <div class="flex items-center min-w-0">
             <textarea 
                 wire:model="newMessage"
@@ -420,7 +421,7 @@ new class extends Component {
 
             {{-- Actions --}}
             <section class="ml-2 flex items-center gap-2">
-                <!-- 🏷️ Tombol Tag -->
+                <!--  Tombol Tag -->
                 <button type="button" wire:click="openTagModal"
                     class="flex items-center gap-1 px-1.5 py-1 rounded-xl text-xs font-medium
                     bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
@@ -438,7 +439,7 @@ new class extends Component {
                         </span>
                     @endif
                 </button>
-                <!-- 🚀 Tombol Kirim -->
+                <!--  Tombol Kirim -->
                 <button type="button" 
                     wire:click="sendMessage"
                     id="send-btn-{{ $chat->id }}"
@@ -501,7 +502,7 @@ new class extends Component {
         </style>
     </section>
 
-    <!-- ⚠️ Error Message -->
+    <!--  Error Message -->
     @error('newMessage')
         <div
             class="mt-3 mx-auto max-w-lg px-4 py-2 rounded-xl text-sm font-medium
@@ -539,7 +540,7 @@ new class extends Component {
     @enderror
 
     <!-- ======================== -->
-    <!-- 🏷️ PANEL TAG (Gabung di bawah input chat) -->
+    <!--  PANEL TAG (Gabung di bawah input chat) -->
     <!-- ======================== -->
     @if ($showTagModal)
         <div
@@ -562,7 +563,7 @@ new class extends Component {
                 </button>
             </div>
 
-            <!-- 🔍 Input Pencarian -->
+            <!--  Input Pencarian -->
             <div class="p-4 border-b border-gray-200 dark:border-gray-800">
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -664,7 +665,7 @@ new class extends Component {
 
 
     <!-- ======================== -->
-    <!-- 🧠 SCRIPT -->
+    <!--  SCRIPT -->
     <!-- ======================== -->
     <script>
         /**
@@ -729,7 +730,7 @@ new class extends Component {
     </script>
 
     <!-- ======================== -->
-    <!-- 🎨 STYLE -->
+    <!--  STYLE -->
     <!-- ======================== -->
     <style>
         /* Responsive layout untuk form input */
